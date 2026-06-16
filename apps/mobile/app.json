@@ -1,0 +1,24 @@
+{
+  "expo": {
+    "name": "VELORA",
+    "slug": "velora",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "scheme": "velora",
+    "splash": {
+      "backgroundColor": "#0B0B0B"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.velora.app"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#0B0B0B"
+      },
+      "package": "com.velora.app"
+    },
+    "plugins": ["expo-router"]
+  }
+}

@@ -1,0 +1,29 @@
+services:
+  - type: web
+    name: velora-api
+    env: node
+    buildCommand: pnpm install && pnpm db:generate && pnpm --filter @velora/api build
+    startCommand: pnpm --filter @velora/api start
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false
+      - key: FRONTEND_URL
+        value: https://velora.vercel.app
+      - key: NODE_ENV
+        value: production
