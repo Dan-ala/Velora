@@ -13,11 +13,33 @@ interface LocaleContextValue {
 const LocaleContext = createContext<LocaleContextValue | null>(null);
 
 const STORAGE_KEY = 'velora-locale';
+const MANUAL_COOKIE = 'velora-locale-manual';
+
+function getCookie(name: string): string | null {
+  if (typeof document === 'undefined') return null;
+  const match = document.cookie.match(new RegExp(`(^| )${name}=([^;]+)`));
+  return match ? decodeURIComponent(match[2]) : null;
+}
+
+function setCookie(name: string, value: string): void {
+  document.cookie = `${name}=${value};path=/;max-age=${60 * 60 * 24 * 365};samesite=lax`;
+}
 
 function getInitialLocale(): Locale {
   if (typeof window === 'undefined') return 'es';
+
+  const manual = getCookie(MANUAL_COOKIE);
+  if (manual === 'true') {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored === 'en' || stored === 'es') return stored;
+  }
+
+  const geo = getCookie(STORAGE_KEY);
+  if (geo === 'en' || geo === 'es') return geo;
+
   const stored = localStorage.getItem(STORAGE_KEY);
   if (stored === 'en' || stored === 'es') return stored;
+
   const browserLang = navigator.language.split('-')[0];
   if (browserLang === 'en') return 'en';
   return 'es';
@@ -33,6 +55,8 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
   const setLocale = (newLocale: Locale) => {
     setLocaleState(newLocale);
     localStorage.setItem(STORAGE_KEY, newLocale);
+    setCookie(MANUAL_COOKIE, 'true');
+    setCookie(STORAGE_KEY, newLocale);
   };
 
   const translate = (key: string, params?: Record<string, string | number>) => t(locale, key, params);
