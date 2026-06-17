@@ -83,6 +83,7 @@ export const productService = {
   },
 
   async delete(id: string) {
+    await prisma.orderItem.deleteMany({ where: { productId: id } });
     return prisma.product.delete({ where: { id } });
   },
 
