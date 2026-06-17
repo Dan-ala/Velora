@@ -1,6 +1,6 @@
 {
   "framework": "nextjs",
-  "buildCommand": "pnpm build",
+  "buildCommand": "turbo build --filter=@velora/web",
   "outputDirectory": ".next",
   "installCommand": "pnpm install"
 }
