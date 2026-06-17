@@ -7,18 +7,21 @@ import { useAuthStore } from '@/stores/auth-store';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useLocale } from '@/providers/locale-provider';
+import { LocaleSwitcher } from './locale-switcher';
 
 const NAV_ITEMS = [
-  { label: 'New Arrivals', href: '/products?sort=newest' },
-  { label: 'Shirts', href: '/products?category=shirts' },
-  { label: 'Hoodies', href: '/products?category=hoodies' },
-  { label: 'Shoes', href: '/products?category=shoes' },
+  { label: 'nav.newArrivals', href: '/products?sort=newest' },
+  { label: 'nav.shirts', href: '/products?category=shirts' },
+  { label: 'nav.hoodies', href: '/products?category=hoodies' },
+  { label: 'nav.shoes', href: '/products?category=shoes' },
 ];
 
 export function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const { t } = useLocale();
   const itemCount = useCartStore((s) => s.getItemCount());
   const openCart = useCartStore((s) => s.openCart);
   const user = useAuthStore((s) => s.user);
@@ -30,7 +33,7 @@ export function Header() {
         <button
           className="flex items-center gap-2 tablet:hidden"
           onClick={() => setIsMenuOpen(!isMenuOpen)}
-          aria-label="Toggle menu"
+          aria-label={t('nav.toggleMenu')}
         >
           {isMenuOpen ? <X size={22} /> : <Menu size={22} />}
         </button>
@@ -42,7 +45,7 @@ export function Header() {
               href={item.href}
               className="text-sm uppercase tracking-widest text-brand-stone transition-colors hover:text-white"
             >
-              {item.label}
+              {t(item.label)}
             </Link>
           ))}
         </div>
@@ -52,10 +55,12 @@ export function Header() {
         </Link>
 
         <div className="flex items-center gap-4">
+          <LocaleSwitcher />
+
           <button
             onClick={() => setIsSearchOpen(!isSearchOpen)}
             className="transition-colors hover:text-brand-gold"
-            aria-label="Search"
+            aria-label={t('nav.search')}
           >
             <Search size={20} />
           </button>
@@ -63,7 +68,7 @@ export function Header() {
           <Link
             href={user ? '/account' : '/auth/login'}
             className="hidden transition-colors hover:text-brand-gold tablet:block"
-            aria-label="Account"
+            aria-label={t('nav.myAccount')}
           >
             <User size={20} />
           </Link>
@@ -73,14 +78,14 @@ export function Header() {
               href="/admin"
               className="hidden text-xs uppercase tracking-widest text-brand-gold transition-colors hover:text-white tablet:block"
             >
-              Admin
+              {t('nav.admin')}
             </Link>
           )}
 
           <button
             onClick={openCart}
             className="relative transition-colors hover:text-brand-gold"
-            aria-label="Cart"
+            aria-label={t('nav.cart')}
           >
             <ShoppingBag size={20} />
             {itemCount > 0 && (
@@ -105,7 +110,7 @@ export function Header() {
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-brand-stone" size={18} />
                 <input
                   type="text"
-                  placeholder="Search products..."
+                  placeholder={t('nav.searchProducts')}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full rounded-full bg-white/10 py-3 pl-12 pr-4 text-sm text-white placeholder:text-brand-stone focus:outline-none focus:ring-2 focus:ring-brand-gold"
@@ -132,7 +137,7 @@ export function Header() {
                   onClick={() => setIsMenuOpen(false)}
                   className="block py-3 text-sm uppercase tracking-widest text-brand-stone transition-colors hover:text-white"
                 >
-                  {item.label}
+                  {t(item.label)}
                 </Link>
               ))}
               <hr className="border-white/10 my-3" />
@@ -142,7 +147,7 @@ export function Header() {
                 className="flex items-center gap-3 py-3 text-sm text-brand-stone transition-colors hover:text-white"
               >
                 <User size={18} />
-                {user ? 'My Account' : 'Sign In'}
+                {user ? t('nav.myAccount') : t('nav.signIn')}
               </Link>
               {isAdmin() && (
                 <Link
@@ -150,7 +155,7 @@ export function Header() {
                   onClick={() => setIsMenuOpen(false)}
                   className="block py-3 text-sm text-brand-gold"
                 >
-                  Admin Dashboard
+                  {t('nav.adminDashboard')}
                 </Link>
               )}
             </div>

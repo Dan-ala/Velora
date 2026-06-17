@@ -7,7 +7,8 @@ import { BottomNav } from '@/components/layout/bottom-nav';
 import { CartSidebar } from '@/components/layout/cart-sidebar';
 import { ProductCard } from '@/components/product/product-card';
 import { api } from '@/lib/api';
-import { formatCurrency } from '@/lib/utils';
+import { useLocale } from '@/providers/locale-provider';
+import { formatCurrency, currencyLocale } from '@/lib/utils';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -21,7 +22,15 @@ const CATEGORIES = [
 ];
 
 export default function HomePage() {
+  const { locale, t } = useLocale();
   const [featured, setFeatured] = useState<Product[]>([]);
+
+  const categoryLabels: Record<string, string> = {
+    shirts: t('nav.shirts'),
+    hoodies: t('nav.hoodies'),
+    shoes: t('nav.shoes'),
+    accessories: t('nav.accessories'),
+  };
 
   useEffect(() => {
     api.get<{ success: boolean; data: Product[] }>('/products/featured')
@@ -46,7 +55,7 @@ export default function HomePage() {
               transition={{ duration: 0.6, delay: 0.2 }}
               className="mb-4 text-xs font-semibold uppercase tracking-[0.3em] text-brand-gold"
             >
-              Premium Collection
+              {t('home.premiumCollection')}
             </motion.p>
 
             <motion.h1
@@ -55,9 +64,9 @@ export default function HomePage() {
               transition={{ duration: 0.8, delay: 0.3 }}
               className="font-display text-5xl font-bold leading-tight text-white tablet:text-7xl desktop:text-8xl"
             >
-              Define Your
+              {t('home.heroTitle')}
               <br />
-              <span className="text-brand-gold">Identity</span>
+              <span className="text-brand-gold">{t('home.heroTitleHighlight')}</span>
             </motion.h1>
 
             <motion.p
@@ -66,7 +75,7 @@ export default function HomePage() {
               transition={{ duration: 0.6, delay: 0.5 }}
               className="mx-auto mt-6 max-w-md text-base text-brand-stone tablet:text-lg"
             >
-              Discover premium clothing that speaks to your individuality. Every piece tells a story of elegance and confidence.
+              {t('home.heroDescription')}
             </motion.p>
 
             <motion.div
@@ -79,13 +88,13 @@ export default function HomePage() {
                 href="/products"
                 className="flex h-12 w-full max-w-xs items-center justify-center rounded-full bg-brand-gold px-8 text-sm font-semibold uppercase tracking-wider text-brand-black transition-all hover:bg-brand-gold/90"
               >
-                Shop Now
+                {t('home.shopNow')}
               </Link>
               <Link
                 href="/products?sort=newest"
                 className="flex h-12 w-full max-w-xs items-center justify-center rounded-full border border-white/20 px-8 text-sm font-medium uppercase tracking-wider text-white transition-all hover:bg-white/10"
               >
-                New Arrivals
+                {t('nav.newArrivals')}
               </Link>
             </motion.div>
 
@@ -95,11 +104,11 @@ export default function HomePage() {
               transition={{ delay: 1 }}
               className="mt-16 flex items-center justify-center gap-8 text-xs text-brand-stone/60"
             >
-              <span>Free shipping over {formatCurrency(200000)}</span>
+              <span>{t('home.freeShipping', { amount: formatCurrency(200000, currencyLocale(locale)) })}</span>
               <span className="hidden h-4 w-px bg-brand-stone/30 tablet:block" />
-              <span className="hidden tablet:block">30-day returns</span>
+              <span className="hidden tablet:block">{t('home.dayReturns')}</span>
               <span className="hidden h-4 w-px bg-brand-stone/30 desktop:block" />
-              <span className="hidden desktop:block">Secure checkout</span>
+              <span className="hidden desktop:block">{t('home.secureCheckout')}</span>
             </motion.div>
           </div>
         </section>
@@ -108,17 +117,17 @@ export default function HomePage() {
           <div className="mb-10 flex items-end justify-between">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-gold">
-                Curated Selection
+                {t('home.curatedSelection')}
               </p>
               <h2 className="mt-2 font-display text-3xl font-bold text-brand-black tablet:text-4xl">
-                Featured Products
+                {t('home.featuredProducts')}
               </h2>
             </div>
             <Link
               href="/products"
               className="hidden text-sm font-medium text-brand-black underline underline-offset-4 transition-colors hover:text-brand-gold tablet:block"
             >
-              View All
+              {t('common.viewAll')}
             </Link>
           </div>
 
@@ -133,7 +142,7 @@ export default function HomePage() {
               href="/products"
               className="inline-flex h-11 items-center justify-center rounded-full border border-brand-black px-6 text-xs font-medium uppercase tracking-wider"
             >
-              View All Products
+              {t('common.viewAllProducts')}
             </Link>
           </div>
         </section>
@@ -142,10 +151,10 @@ export default function HomePage() {
           <div className="mx-auto max-w-7xl px-4 tablet:px-6 wide:px-8">
             <div className="mb-10 text-center">
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-gold">
-                Collections
+                {t('home.collections')}
               </p>
               <h2 className="mt-2 font-display text-3xl font-bold text-brand-black tablet:text-4xl">
-                Shop by Category
+                {t('home.shopByCategory')}
               </h2>
             </div>
 
@@ -158,15 +167,15 @@ export default function HomePage() {
                 >
                   <Image
                     src={cat.image}
-                    alt={cat.name}
+                    alt={categoryLabels[cat.slug]}
                     fill
                     className="object-cover transition-transform duration-700 group-hover:scale-105"
                     sizes="(max-width: 768px) 50vw, 25vw"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-brand-black/70 via-transparent to-transparent" />
                   <div className="absolute bottom-0 left-0 right-0 p-4">
-                    <h3 className="text-lg font-semibold text-white">{cat.name}</h3>
-                    <p className="mt-1 text-xs text-brand-stone">Explore collection</p>
+                    <h3 className="text-lg font-semibold text-white">{categoryLabels[cat.slug]}</h3>
+                    <p className="mt-1 text-xs text-brand-stone">{t('home.exploreCollection')}</p>
                   </div>
                 </Link>
               ))}
@@ -183,7 +192,7 @@ export default function HomePage() {
               viewport={{ once: true }}
               className="text-xs font-semibold uppercase tracking-[0.3em] text-brand-gold"
             >
-              The VELORA Philosophy
+              {t('home.philosophy')}
             </motion.p>
             <motion.h2
               initial={{ opacity: 0, y: 20 }}
@@ -192,7 +201,7 @@ export default function HomePage() {
               transition={{ delay: 0.2 }}
               className="mt-4 font-display text-3xl font-bold text-white tablet:text-5xl"
             >
-              Wear your identity
+              {t('home.philosophyTitle')}
             </motion.h2>
             <motion.p
               initial={{ opacity: 0, y: 20 }}
@@ -201,7 +210,7 @@ export default function HomePage() {
               transition={{ delay: 0.4 }}
               className="mx-auto mt-6 max-w-2xl text-base leading-relaxed text-brand-stone"
             >
-              VELORA is more than clothing. It is a statement of elegance, confidence, and modern style. Every piece is crafted for those who embrace their uniqueness.
+              {t('home.philosophyDescription')}
             </motion.p>
           </div>
         </section>

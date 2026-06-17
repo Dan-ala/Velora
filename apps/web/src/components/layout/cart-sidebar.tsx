@@ -2,7 +2,8 @@
 
 import { useCartStore } from '@/stores/cart-store';
 import { useAuthStore } from '@/stores/auth-store';
-import { formatCurrency } from '@/lib/utils';
+import { useLocale } from '@/providers/locale-provider';
+import { formatCurrency, currencyLocale } from '@/lib/utils';
 import { X, Minus, Plus, ShoppingBag, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -11,6 +12,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 export function CartSidebar() {
   const { items, isOpen, closeCart, removeItem, updateQuantity, getTotal } = useCartStore();
   const user = useAuthStore((s) => s.user);
+  const { locale, t } = useLocale();
   const total = getTotal();
 
   return (
@@ -36,7 +38,7 @@ export function CartSidebar() {
               <div className="flex items-center gap-2">
                 <ShoppingBag size={20} className="text-brand-black" />
                 <span className="text-sm font-medium uppercase tracking-wider">
-                  Cart ({items.length})
+                    {t('nav.cart')} ({items.length})
                 </span>
               </div>
               <button
@@ -52,12 +54,12 @@ export function CartSidebar() {
               {items.length === 0 ? (
                 <div className="flex h-full flex-col items-center justify-center text-center">
                   <ShoppingBag size={48} className="mb-4 text-brand-stone/50" />
-                  <p className="text-sm text-brand-stone">Your cart is empty</p>
+                  <p className="text-sm text-brand-stone">{t('cart.empty')}</p>
                   <button
                     onClick={closeCart}
                     className="mt-4 text-sm font-medium text-brand-gold underline underline-offset-4"
                   >
-                    Continue Shopping
+                    {t('common.continueShopping')}
                   </button>
                 </div>
               ) : (
@@ -89,13 +91,13 @@ export function CartSidebar() {
                               <button
                                 onClick={() => removeItem(item.productId)}
                                 className="text-brand-stone transition-colors hover:text-destructive"
-                                aria-label="Remove item"
-                              >
-                                <Trash2 size={14} />
-                              </button>
-                            </div>
-                            <p className="mt-1 text-sm font-medium text-brand-gold">
-                              {formatCurrency(item.price)}
+                  aria-label={t('cart.remove')}
+                                >
+                                  <Trash2 size={14} />
+                                </button>
+                              </div>
+                              <p className="mt-1 text-sm font-medium text-brand-gold">
+                                {formatCurrency(item.price, currencyLocale(locale))}
                             </p>
                           </div>
 
@@ -103,7 +105,7 @@ export function CartSidebar() {
                             <button
                               onClick={() => updateQuantity(item.productId, item.quantity - 1)}
                               className="flex h-7 w-7 items-center justify-center rounded-full border transition-colors hover:bg-brand-ivory"
-                              aria-label="Decrease quantity"
+                              aria-label={t('cart.decrease')}
                             >
                               <Minus size={12} />
                             </button>
@@ -113,7 +115,7 @@ export function CartSidebar() {
                             <button
                               onClick={() => updateQuantity(item.productId, item.quantity + 1)}
                               className="flex h-7 w-7 items-center justify-center rounded-full border transition-colors hover:bg-brand-ivory"
-                              aria-label="Increase quantity"
+                              aria-label={t('cart.increase')}
                             >
                               <Plus size={12} />
                             </button>
@@ -129,8 +131,8 @@ export function CartSidebar() {
             {items.length > 0 && (
               <div className="border-t border-brand-ivory px-6 py-4">
                 <div className="mb-4 flex items-center justify-between">
-                  <span className="text-sm uppercase tracking-wider">Total</span>
-                  <span className="text-lg font-semibold">{formatCurrency(total)}</span>
+                  <span className="text-sm uppercase tracking-wider">{t('common.total')}</span>
+                  <span className="text-lg font-semibold">{formatCurrency(total, currencyLocale(locale))}</span>
                 </div>
 
                 {user ? (
@@ -139,7 +141,7 @@ export function CartSidebar() {
                     onClick={closeCart}
                     className="flex h-12 w-full items-center justify-center rounded-full bg-brand-black text-sm font-medium uppercase tracking-wider text-white transition-all hover:bg-brand-black/90"
                   >
-                    Checkout
+                    {t('cart.checkout')}
                   </Link>
                 ) : (
                   <Link
@@ -147,7 +149,7 @@ export function CartSidebar() {
                     onClick={closeCart}
                     className="flex h-12 w-full items-center justify-center rounded-full bg-brand-black text-sm font-medium uppercase tracking-wider text-white transition-all hover:bg-brand-black/90"
                   >
-                    Sign in to Checkout
+                    {t('cart.signInToCheckout')}
                   </Link>
                 )}
 
@@ -155,7 +157,7 @@ export function CartSidebar() {
                   onClick={closeCart}
                   className="mt-3 flex w-full items-center justify-center text-xs uppercase tracking-wider text-brand-stone transition-colors hover:text-brand-black"
                 >
-                  Continue Shopping
+                  {t('common.continueShopping')}
                 </button>
               </div>
             )}

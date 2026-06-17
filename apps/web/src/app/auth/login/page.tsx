@@ -5,12 +5,14 @@ import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
 import { createClient } from '@/lib/supabase';
 import { useAuthStore } from '@/stores/auth-store';
+import { useLocale } from '@/providers/locale-provider';
 import type { AuthResponse } from '@velora/types';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { Eye, EyeOff } from 'lucide-react';
 
 export default function LoginPage() {
+  const { locale, t } = useLocale();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -36,9 +38,9 @@ export default function LoginPage() {
       setUser(res.data.user);
       router.push('/');
     } catch (err: any) {
-      const msg = err?.message || 'Invalid credentials';
+      const msg = err?.message || t('auth.invalidCredentials');
       if (msg.includes('NetworkError') || msg.includes('Failed to fetch') || msg.includes('fetch failed')) {
-        setError('Could not connect to the server. Make sure the API is running.');
+        setError(t('auth.serverError'));
       } else {
         setError(msg);
       }
@@ -58,8 +60,8 @@ export default function LoginPage() {
         </Link>
 
         <div className="rounded-2xl bg-white p-8 shadow-sm">
-          <h1 className="text-xl font-semibold">Welcome back</h1>
-          <p className="mt-1 text-sm text-brand-stone">Sign in to your account</p>
+          <h1 className="text-xl font-semibold">{t('auth.welcomeBack')}</h1>
+          <p className="mt-1 text-sm text-brand-stone">{t('auth.signInToAccount')}</p>
 
           <form onSubmit={handleSubmit} className="mt-6 space-y-4">
             {error && (
@@ -68,7 +70,7 @@ export default function LoginPage() {
 
             <div>
               <label htmlFor="email" className="text-xs font-medium uppercase tracking-wider text-brand-stone">
-                Email
+                {t('auth.email')}
               </label>
               <input
                 id="email"
@@ -83,7 +85,7 @@ export default function LoginPage() {
 
             <div>
               <label htmlFor="password" className="text-xs font-medium uppercase tracking-wider text-brand-stone">
-                Password
+                {t('auth.password')}
               </label>
               <div className="relative mt-1.5">
                 <input
@@ -111,7 +113,7 @@ export default function LoginPage() {
               disabled={isLoading}
               className="flex h-12 w-full items-center justify-center rounded-full bg-brand-black text-sm font-medium uppercase tracking-wider text-white transition-all hover:bg-brand-black/90 disabled:opacity-50"
             >
-              {isLoading ? 'Signing in...' : 'Sign In'}
+              {isLoading ? t('auth.signingIn') : t('auth.signIn')}
             </button>
           </form>
 
@@ -120,14 +122,14 @@ export default function LoginPage() {
               href="/auth/reset-password"
               className="text-xs text-brand-stone underline underline-offset-4 hover:text-brand-black"
             >
-              Forgot password?
+              {t('auth.forgotPassword')}
             </Link>
           </div>
 
           <p className="mt-6 text-center text-xs text-brand-stone">
-            Don&apos;t have an account?{' '}
+            {t('auth.noAccount')}{' '}
             <Link href="/auth/register" className="font-medium text-brand-black underline underline-offset-4">
-              Sign up
+              {t('auth.signUp')}
             </Link>
           </p>
         </div>

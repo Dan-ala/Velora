@@ -9,11 +9,13 @@ import { CartSidebar } from '@/components/layout/cart-sidebar';
 import { ProductCard } from '@/components/product/product-card';
 import { api } from '@/lib/api';
 import { CATEGORIES, CATEGORY_LABELS } from '@velora/types';
+import { useLocale } from '@/providers/locale-provider';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import type { Product } from '@velora/types';
 
 export default function ProductsPage() {
+  const { locale, t } = useLocale();
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState('');
@@ -49,7 +51,7 @@ export default function ProductsPage() {
             >
               {activeCategory && CATEGORY_LABELS[activeCategory as keyof typeof CATEGORY_LABELS]
                 ? CATEGORY_LABELS[activeCategory as keyof typeof CATEGORY_LABELS]
-                : 'All Products'}
+                : t('common.viewAllProducts')}
             </motion.h1>
           </div>
         </div>
@@ -98,7 +100,7 @@ export default function ProductsPage() {
               </div>
             ) : products.length === 0 ? (
               <div className="py-20 text-center">
-                <p className="text-brand-stone">No products found.</p>
+                <p className="text-brand-stone">{t('common.noProducts')}</p>
               </div>
             ) : (
               <div className="grid grid-cols-2 gap-4 tablet:grid-cols-3 desktop:grid-cols-4">

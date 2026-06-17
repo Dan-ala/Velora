@@ -2,8 +2,9 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { formatCurrency } from '@/lib/utils';
+import { formatCurrency, currencyLocale } from '@/lib/utils';
 import { useCartStore } from '@/stores/cart-store';
+import { useLocale } from '@/providers/locale-provider';
 import { ShoppingBag } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { toast } from '@/hooks/use-toast';
@@ -18,6 +19,7 @@ interface Props {
 export function ProductCard({ product, priority = false }: Props) {
   const addItem = useCartStore((s) => s.addItem);
   const openCart = useCartStore((s) => s.openCart);
+  const { locale, t } = useLocale();
   const image = product.images?.[0];
   const hasDiscount = false;
 
@@ -34,7 +36,7 @@ export function ProductCard({ product, priority = false }: Props) {
         stock: product.stock,
       });
       openCart();
-      toast({ title: 'Added to cart', description: product.name, variant: 'success' });
+      toast({ title: t('common.addedToCart'), description: product.name, variant: 'success' });
     }
   };
 
@@ -67,13 +69,13 @@ export function ProductCard({ product, priority = false }: Props) {
 
           {product.stock <= 5 && product.stock > 0 && (
             <span className="absolute left-3 top-3 rounded-full bg-brand-gold px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-brand-black">
-              Low stock
+              {t('common.lowStock')}
             </span>
           )}
 
           {product.stock === 0 && (
             <span className="absolute left-3 top-3 rounded-full bg-brand-black/80 px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-white backdrop-blur-sm">
-              Out of stock
+              {t('common.outOfStock')}
             </span>
           )}
 
@@ -86,7 +88,7 @@ export function ProductCard({ product, priority = false }: Props) {
                 ? 'bg-brand-stone/50 cursor-not-allowed'
                 : 'bg-white shadow-lg hover:bg-brand-gold hover:text-white translate-y-2 opacity-0 group-hover:translate-y-0 group-hover:opacity-100',
             )}
-            aria-label="Add to cart"
+            aria-label={t('common.addToCart')}
           >
             <ShoppingBag size={16} />
           </button>
@@ -96,7 +98,7 @@ export function ProductCard({ product, priority = false }: Props) {
           <h3 className="text-sm font-medium text-brand-black line-clamp-1">{product.name}</h3>
           <div className="flex items-center justify-between">
             <span className="text-sm font-semibold text-brand-gold">
-              {formatCurrency(product.price)}
+              {formatCurrency(product.price, currencyLocale(locale))}
             </span>
             <span className="text-[10px] uppercase tracking-wider text-brand-stone">
               {product.category}

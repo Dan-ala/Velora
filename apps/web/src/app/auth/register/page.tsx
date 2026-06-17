@@ -3,11 +3,13 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
+import { useLocale } from '@/providers/locale-provider';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { Eye, EyeOff } from 'lucide-react';
 
 export default function RegisterPage() {
+  const { locale, t } = useLocale();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -21,7 +23,7 @@ export default function RegisterPage() {
     setIsLoading(true);
 
     if (password.length < 8) {
-      setError('Password must be at least 8 characters');
+      setError(t('auth.passwordMinError'));
       setIsLoading(false);
       return;
     }
@@ -30,7 +32,7 @@ export default function RegisterPage() {
       await api.post('/auth/register', { email, password });
       router.push('/auth/login?registered=true');
     } catch (err: any) {
-      setError(err?.message || 'Registration failed');
+      setError(err?.message || t('auth.registrationFailed'));
       setIsLoading(false);
     }
   };
@@ -47,8 +49,8 @@ export default function RegisterPage() {
         </Link>
 
         <div className="rounded-2xl bg-white p-8 shadow-sm">
-          <h1 className="text-xl font-semibold">Create account</h1>
-          <p className="mt-1 text-sm text-brand-stone">Join VELORA today</p>
+          <h1 className="text-xl font-semibold">{t('auth.createAccount')}</h1>
+          <p className="mt-1 text-sm text-brand-stone">{t('auth.join')}</p>
 
           <form onSubmit={handleSubmit} className="mt-6 space-y-4">
             {error && (
@@ -57,7 +59,7 @@ export default function RegisterPage() {
 
             <div>
               <label htmlFor="email" className="text-xs font-medium uppercase tracking-wider text-brand-stone">
-                Email
+                {t('auth.email')}
               </label>
               <input
                 id="email"
@@ -72,7 +74,7 @@ export default function RegisterPage() {
 
             <div>
               <label htmlFor="password" className="text-xs font-medium uppercase tracking-wider text-brand-stone">
-                Password
+                {t('auth.password')}
               </label>
               <div className="relative mt-1.5">
                 <input
@@ -94,7 +96,7 @@ export default function RegisterPage() {
                   {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
               </div>
-              <p className="mt-1 text-[10px] text-brand-stone">At least 8 characters</p>
+              <p className="mt-1 text-[10px] text-brand-stone">{t('auth.minChars')}</p>
             </div>
 
             <button
@@ -102,14 +104,14 @@ export default function RegisterPage() {
               disabled={isLoading}
               className="flex h-12 w-full items-center justify-center rounded-full bg-brand-black text-sm font-medium uppercase tracking-wider text-white transition-all hover:bg-brand-black/90 disabled:opacity-50"
             >
-              {isLoading ? 'Creating account...' : 'Create Account'}
+              {isLoading ? t('auth.creatingAccount') : t('auth.createAccount')}
             </button>
           </form>
 
           <p className="mt-6 text-center text-xs text-brand-stone">
-            Already have an account?{' '}
+            {t('auth.haveAccount')}{' '}
             <Link href="/auth/login" className="font-medium text-brand-black underline underline-offset-4">
-              Sign in
+              {t('auth.signInLink')}
             </Link>
           </p>
         </div>

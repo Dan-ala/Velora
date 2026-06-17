@@ -4,17 +4,19 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useCartStore } from '@/stores/cart-store';
 import { useAuthStore } from '@/stores/auth-store';
+import { useLocale } from '@/providers/locale-provider';
 import { Home, ShoppingBag, Search, User, Grid3X3 } from 'lucide-react';
 
 const NAV_ITEMS = [
-  { label: 'Home', href: '/', icon: Home },
-  { label: 'Categories', href: '/products', icon: Grid3X3 },
-  { label: 'Cart', href: '/cart', icon: ShoppingBag, isCart: true },
-  { label: 'Search', href: '/search', icon: Search },
-  { label: 'Profile', href: '/account', icon: User, requiresAuth: true },
+  { labelKey: 'nav.home', href: '/', icon: Home },
+  { labelKey: 'nav.categories', href: '/products', icon: Grid3X3 },
+  { labelKey: 'nav.cart', href: '/cart', icon: ShoppingBag, isCart: true },
+  { labelKey: 'nav.search', href: '/search', icon: Search },
+  { labelKey: 'nav.profile', href: '/account', icon: User, requiresAuth: true },
 ];
 
 export function BottomNav() {
+  const { t } = useLocale();
   const pathname = usePathname();
   const itemCount = useCartStore((s) => s.getItemCount());
   const isAuthenticated = useAuthStore((s) => s.user !== null);
@@ -35,7 +37,7 @@ export function BottomNav() {
                 className="flex flex-col items-center gap-0.5 px-3"
               >
                 <Icon size={20} className="text-brand-stone" />
-                <span className="text-[10px] text-brand-stone">{item.label}</span>
+                <span className="text-[10px] text-brand-stone">{t(item.labelKey)}</span>
               </Link>
             );
           }
@@ -60,7 +62,7 @@ export function BottomNav() {
               <span
                 className={`text-[10px] ${isActive ? 'font-medium text-brand-black' : 'text-brand-stone'}`}
               >
-                {item.label}
+                {t(item.labelKey)}
               </span>
             </Link>
           );

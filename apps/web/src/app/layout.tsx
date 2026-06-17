@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 import { QueryProvider } from '@/providers/query-provider';
 import { AuthProvider } from '@/providers/auth-provider';
+import { LocaleProvider } from '@/providers/locale-provider';
 import { Toaster } from '@/components/ui/toaster';
 
 export const metadata: Metadata = {
@@ -24,8 +25,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="min-h-screen bg-brand-ivory">
         <QueryProvider>
           <AuthProvider>
-            {children}
-            <Toaster />
+            <LocaleProvider>
+              {children}
+              <Toaster />
+            </LocaleProvider>
           </AuthProvider>
         </QueryProvider>
       </body>

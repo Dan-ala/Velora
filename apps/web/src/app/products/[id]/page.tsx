@@ -7,7 +7,8 @@ import { Footer } from '@/components/layout/footer';
 import { BottomNav } from '@/components/layout/bottom-nav';
 import { CartSidebar } from '@/components/layout/cart-sidebar';
 import { api } from '@/lib/api';
-import { formatCurrency } from '@/lib/utils';
+import { useLocale } from '@/providers/locale-provider';
+import { formatCurrency, currencyLocale } from '@/lib/utils';
 import { useCartStore } from '@/stores/cart-store';
 import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
@@ -17,6 +18,7 @@ import type { Product } from '@velora/types';
 
 export default function ProductDetailPage() {
   const params = useParams();
+  const { locale, t } = useLocale();
   const [product, setProduct] = useState<Product | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [currentImage, setCurrentImage] = useState(0);
@@ -60,9 +62,9 @@ export default function ProductDetailPage() {
         <CartSidebar />
         <main className="flex min-h-screen items-center justify-center pb-16 tablet:pb-0">
           <div className="text-center">
-            <p className="text-brand-stone">Product not found.</p>
+            <p className="text-brand-stone">{t('common.productNotFound')}</p>
             <Link href="/products" className="mt-4 inline-flex text-sm text-brand-gold underline underline-offset-4">
-              Back to products
+              {t('common.backToProducts')}
             </Link>
           </div>
         </main>
@@ -97,7 +99,7 @@ export default function ProductDetailPage() {
             href="/products"
             className="mb-6 inline-flex items-center gap-2 text-xs uppercase tracking-wider text-brand-stone transition-colors hover:text-brand-black"
           >
-            <ChevronLeft size={14} /> Back to Products
+            <ChevronLeft size={14} /> {t('common.backToProducts')}
           </Link>
 
           <div className="grid gap-8 tablet:grid-cols-2 tablet:gap-12">
@@ -150,7 +152,7 @@ export default function ProductDetailPage() {
                 {isOutOfStock && (
                   <div className="absolute inset-0 flex items-center justify-center bg-brand-black/60 backdrop-blur-sm">
                     <span className="text-lg font-semibold uppercase tracking-widest text-white">
-                      Out of Stock
+                      {t('common.outOfStock')}
                     </span>
                   </div>
                 )}
@@ -193,7 +195,7 @@ export default function ProductDetailPage() {
               </motion.h1>
 
               <p className="mt-4 text-2xl font-semibold text-brand-gold">
-                {formatCurrency(product.price)}
+                {formatCurrency(product.price, currencyLocale(locale))}
               </p>
 
               <p className="mt-6 leading-relaxed text-brand-stone">{product.description}</p>
@@ -204,16 +206,16 @@ export default function ProductDetailPage() {
                 />
                 <span className="text-xs text-brand-stone">
                   {product.stock > 10
-                    ? 'In Stock'
+                    ? t('common.inStock')
                     : product.stock > 0
-                      ? `Only ${product.stock} left`
-                      : 'Out of Stock'}
+                      ? t('common.onlyLeft', { stock: product.stock })
+                      : t('common.outOfStock')}
                 </span>
               </div>
 
               <div className="mt-8 space-y-4">
                 <div className="flex items-center gap-4">
-                  <span className="text-xs font-medium uppercase tracking-wider">Quantity</span>
+                  <span className="text-xs font-medium uppercase tracking-wider">{t('common.quantity')}</span>
                   <div className="flex items-center gap-3">
                     <button
                       onClick={() => setQuantity(Math.max(1, quantity - 1))}
@@ -238,7 +240,7 @@ export default function ProductDetailPage() {
                     className="flex h-12 flex-1 items-center justify-center gap-2 rounded-full bg-brand-black text-sm font-medium uppercase tracking-wider text-white transition-all hover:bg-brand-black/90 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     <ShoppingBag size={16} />
-                    {isOutOfStock ? 'Out of Stock' : 'Add to Cart'}
+                    {isOutOfStock ? t('common.outOfStock') : t('common.addToCart')}
                   </button>
                 </div>
               </div>
@@ -247,23 +249,23 @@ export default function ProductDetailPage() {
                 <div className="text-center">
                   <Truck size={20} className="mx-auto text-brand-gold" />
                   <p className="mt-2 text-[10px] font-medium uppercase tracking-wider">
-                    Free Shipping
+                    {t('common.freeShipping')}
                   </p>
-                  <p className="mt-1 text-[10px] text-brand-stone">Over {formatCurrency(200000)}</p>
+                  <p className="mt-1 text-[10px] text-brand-stone">{t('common.over', { amount: formatCurrency(200000, currencyLocale(locale)) })}</p>
                 </div>
                 <div className="text-center">
                   <Shield size={20} className="mx-auto text-brand-gold" />
                   <p className="mt-2 text-[10px] font-medium uppercase tracking-wider">
-                    Secure Payment
+                    {t('common.securePayment')}
                   </p>
-                  <p className="mt-1 text-[10px] text-brand-stone">100% Secure</p>
+                  <p className="mt-1 text-[10px] text-brand-stone">{t('common.secure')}</p>
                 </div>
                 <div className="text-center">
                   <RotateCcw size={20} className="mx-auto text-brand-gold" />
                   <p className="mt-2 text-[10px] font-medium uppercase tracking-wider">
-                    30 Days Return
+                    {t('common.daysReturn')}
                   </p>
-                  <p className="mt-1 text-[10px] text-brand-stone">Easy Returns</p>
+                  <p className="mt-1 text-[10px] text-brand-stone">{t('common.easyReturns')}</p>
                 </div>
               </div>
             </div>

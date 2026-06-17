@@ -9,13 +9,15 @@ import { CartSidebar } from '@/components/layout/cart-sidebar';
 import { useAuthStore } from '@/stores/auth-store';
 import { createClient } from '@/lib/supabase';
 import { api } from '@/lib/api';
-import { formatCurrency, formatDate } from '@/lib/utils';
+import { useLocale } from '@/providers/locale-provider';
+import { formatCurrency, formatDate, currencyLocale, dateLocale } from '@/lib/utils';
 import { motion } from 'framer-motion';
 import { Package, LogOut, User as UserIcon, ShoppingBag, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
 import type { Order } from '@velora/types';
 
 export default function AccountPage() {
+  const { locale, t } = useLocale();
   const { user, setUser } = useAuthStore();
   const router = useRouter();
   const [orders, setOrders] = useState<Order[]>([]);
@@ -51,6 +53,15 @@ export default function AccountPage() {
     return colors[status] || 'text-brand-stone bg-brand-ivory';
   };
 
+  const statusLabels: Record<string, string> = {
+    pending: t('account.pending'),
+    confirmed: t('account.confirmed'),
+    processing: t('account.processing'),
+    shipped: t('account.shipped'),
+    delivered: t('account.delivered'),
+    cancelled: t('account.cancelled'),
+  };
+
   return (
     <>
       <Header />
@@ -59,7 +70,7 @@ export default function AccountPage() {
       <main className="min-h-screen pb-16 tablet:pb-0">
         <div className="bg-brand-black py-12 tablet:py-16">
           <div className="mx-auto max-w-7xl px-4 tablet:px-6 wide:px-8">
-            <h1 className="font-display text-3xl font-bold text-white tablet:text-5xl">My Account</h1>
+            <h1 className="font-display text-3xl font-bold text-white tablet:text-5xl">{t('account.title')}</h1>
           </div>
         </div>
 
@@ -80,7 +91,7 @@ export default function AccountPage() {
                   onClick={handleLogout}
                   className="mt-4 flex w-full items-center justify-center gap-2 rounded-full border py-2.5 text-xs font-medium uppercase tracking-wider transition-colors hover:bg-brand-ivory"
                 >
-                  <LogOut size={14} /> Sign Out
+                  <LogOut size={14} /> {t('account.signOut')}
                 </button>
               </div>
 
@@ -91,7 +102,7 @@ export default function AccountPage() {
                     className="flex items-center justify-between rounded-lg bg-brand-ivory px-4 py-3 text-sm font-medium"
                   >
                     <div className="flex items-center gap-3">
-                      <Package size={16} /> Orders
+                      <Package size={16} /> {t('account.orders')}
                     </div>
                     <ChevronRight size={14} />
                   </Link>
@@ -100,14 +111,14 @@ export default function AccountPage() {
             </div>
 
             <div className="space-y-4 tablet:col-span-3">
-              <h2 className="text-lg font-semibold">Order History</h2>
+              <h2 className="text-lg font-semibold">{t('account.orderHistory')}</h2>
 
               {orders.length === 0 ? (
                 <div className="rounded-xl bg-white p-8 text-center shadow-sm">
                   <ShoppingBag size={32} className="mx-auto text-brand-stone/50" />
-                  <p className="mt-3 text-sm text-brand-stone">No orders yet</p>
+                  <p className="mt-3 text-sm text-brand-stone">{t('account.noOrders')}</p>
                   <Link href="/products" className="mt-3 inline-flex text-xs text-brand-gold underline underline-offset-4">
-                    Start shopping
+                    {t('account.startShopping')}
                   </Link>
                 </div>
               ) : (
@@ -121,16 +132,16 @@ export default function AccountPage() {
                     >
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="text-xs text-brand-stone">Order #{order.id.slice(0, 8)}</p>
-                          <p className="mt-1 text-sm font-medium">{formatCurrency(order.total)}</p>
+                          <p className="text-xs text-brand-stone">{t('account.orderId', { id: order.id.slice(0, 8) })}</p>
+                          <p className="mt-1 text-sm font-medium">{formatCurrency(order.total, currencyLocale(locale))}</p>
                         </div>
                         <span
                           className={`rounded-full px-3 py-1 text-[10px] font-medium uppercase tracking-wider ${getStatusColor(order.status)}`}
                         >
-                          {order.status}
+                          {statusLabels[order.status] || order.status}
                         </span>
                       </div>
-                      <p className="mt-2 text-xs text-brand-stone">{formatDate(order.createdAt)}</p>
+                      <p className="mt-2 text-xs text-brand-stone">{formatDate(order.createdAt, dateLocale(locale))}</p>
                       {order.items && (
                         <div className="mt-3 flex gap-2">
                           {order.items.slice(0, 3).map((item) => (
