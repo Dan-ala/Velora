@@ -88,11 +88,9 @@ export function Header() {
             aria-label={t('nav.cart')}
           >
             <ShoppingBag size={20} />
-            {itemCount > 0 && (
-              <span className="absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full bg-brand-gold text-[10px] font-bold text-brand-black">
-                {itemCount > 99 ? '99+' : itemCount}
-              </span>
-            )}
+            <span className={`absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full bg-brand-gold text-[10px] font-bold text-brand-black transition-opacity ${itemCount > 0 ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
+              {itemCount > 99 ? '99+' : itemCount}
+            </span>
           </button>
         </div>
       </nav>

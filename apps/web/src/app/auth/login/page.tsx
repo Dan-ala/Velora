@@ -19,7 +19,7 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
-  const setUser = useAuthStore((s) => s.setUser);
+  const setSession = useAuthStore((s) => s.setSession);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,7 +35,7 @@ export default function LoginPage() {
         refresh_token: res.data.session.refreshToken,
       });
 
-      setUser(res.data.user);
+      setSession(res.data.user, res.data.session.accessToken, res.data.session.refreshToken);
       router.push('/');
     } catch (err: any) {
       const msg = err?.message || t('auth.invalidCredentials');

@@ -131,8 +131,11 @@ export default function HomePage() {
             </Link>
           </div>
 
-          <div className="grid grid-cols-2 gap-4 tablet:grid-cols-3 desktop:grid-cols-4">
-            {featured.map((product) => (
+            <div className="grid grid-cols-2 gap-4 tablet:grid-cols-3 desktop:grid-cols-4">
+            {featured.slice(0, 4).map((product) => (
+              <ProductCard key={product.id} product={product} priority />
+            ))}
+            {featured.slice(4).map((product) => (
               <ProductCard key={product.id} product={product} />
             ))}
           </div>
@@ -169,6 +172,7 @@ export default function HomePage() {
                     src={cat.image}
                     alt={categoryLabels[cat.slug]}
                     fill
+                    priority={cat.slug === 'shirts' || cat.slug === 'hoodies'}
                     className="object-cover transition-transform duration-700 group-hover:scale-105"
                     sizes="(max-width: 768px) 50vw, 25vw"
                   />

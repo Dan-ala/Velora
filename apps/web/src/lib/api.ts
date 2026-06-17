@@ -1,11 +1,12 @@
 import { createClient } from './supabase';
+import { useAuthStore } from '@/stores/auth-store';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
 
 async function getAuthHeaders(): Promise<Record<string, string>> {
   const supabase = createClient();
   const { data } = await supabase.auth.getSession();
-  const token = data.session?.access_token;
+  const token = data.session?.access_token || useAuthStore.getState().accessToken;
 
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',

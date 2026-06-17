@@ -49,17 +49,26 @@ done
 
 echo "[4/4] Starting Web app on port 3000..."
 cd "$ROOT_DIR/apps/web"
-PORT=3000 npx next start &
+PORT=3000 npx next dev &
 WEB_PID=$!
 cd "$ROOT_DIR"
+
+echo "      Waiting for Web app to start..."
+for i in $(seq 1 30); do
+  if curl -sf http://localhost:3000 > /dev/null 2>&1; then
+    echo "      Web app is ready!"
+    break
+  fi
+  sleep 2
+done
 
 echo ""
 echo "============================================"
 echo "  Servers are running!"
 echo "============================================"
 echo ""
-echo "  Web App:    http://localhost:3000"
-echo "  API:        http://localhost:4000"
+echo "  Web App:    http://localhost:3000 ($(hostname -I | awk '{print $1}'))"
+echo "  API:        http://localhost:4000 ($(hostname -I | awk '{print $1}'))"
 echo "  API Health: http://localhost:4000/health"
 echo ""
 echo "  Press Ctrl+C to stop all servers..."
