@@ -21,7 +21,14 @@ async function bootstrap() {
 
   await app.register(helmet, { contentSecurityPolicy: false });
   await app.register(cors, {
-    origin: [env.FRONTEND_URL],
+    origin: (origin, cb) => {
+      if (!origin || env.NODE_ENV === 'development') {
+        cb(null, true);
+        return;
+      }
+      const allowed = [env.FRONTEND_URL];
+      cb(null, allowed.includes(origin));
+    },
     credentials: true,
   });
   await app.register(rateLimit, {
