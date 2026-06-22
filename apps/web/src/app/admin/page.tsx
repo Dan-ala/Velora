@@ -28,8 +28,13 @@ export default function AdminDashboard() {
   });
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [imageUrl, setImageUrl] = useState('');
+  const [useFileUpload, setUseFileUpload] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const [imageUrlInput, setImageUrlInput] = useState('');
+  const [showImageUrlInput, setShowImageUrlInput] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user || user.role !== 'admin') {
@@ -65,17 +70,20 @@ export default function AdminDashboard() {
     e.preventDefault();
     setIsUploading(true);
     try {
-      let imageUrl = '';
+      let finalImageUrl = '';
       let imagePublicId = '';
 
-      if (imageFile) {
+      if (useFileUpload && imageFile) {
         const b64 = await toBase64(imageFile);
         const uploadRes = await api.post<{ success: boolean; data: { url: string; publicId: string } }>(
           '/cloudinary/upload',
           { image: b64, folder: 'velora' },
         );
-        imageUrl = uploadRes.data.url;
+        finalImageUrl = uploadRes.data.url;
         imagePublicId = uploadRes.data.publicId;
+      } else if (!useFileUpload && imageUrl) {
+        finalImageUrl = imageUrl;
+        imagePublicId = `url-${Date.now()}`;
       }
 
       const productRes = await api.post<{ success: boolean; data: { id: string } }>('/admin/products', {
@@ -86,9 +94,9 @@ export default function AdminDashboard() {
         stock: parseInt(formData.stock),
       });
 
-      if (imageUrl && imagePublicId) {
+      if (finalImageUrl && imagePublicId) {
         await api.post(`/admin/products/${productRes.data.id}/images`, {
-          url: imageUrl,
+          url: finalImageUrl,
           publicId: imagePublicId,
         });
       }
@@ -97,6 +105,8 @@ export default function AdminDashboard() {
       setFormData({ name: '', description: '', price: '', category: 'shirts', stock: '0' });
       setImageFile(null);
       setImagePreview(null);
+      setImageUrl('');
+      setUseFileUpload(true);
       setIsUploading(false);
       loadData();
       toast({ title: 'Product created', variant: 'success' });
@@ -218,7 +228,7 @@ export default function AdminDashboard() {
                 >
                   <div className="mb-4 flex items-center justify-between">
                     <h3 className="text-sm font-semibold">New Product</h3>
-                    <button onClick={() => setShowProductForm(false)}>
+                    <button onClick={() => { setShowProductForm(false); setImageUrl(''); setUseFileUpload(true); setImageFile(null); setImagePreview(null); }}>
                       <X size={16} />
                     </button>
                   </div>
@@ -269,30 +279,62 @@ export default function AdminDashboard() {
                       />
                     </div>
                     <div className="tablet:col-span-2">
-                      <div
-                        onClick={() => fileInputRef.current?.click()}
-                        className="flex cursor-pointer items-center gap-3 rounded-lg border-2 border-dashed border-brand-stone/30 px-4 py-6 text-sm text-brand-stone transition-colors hover:border-brand-gold/50 hover:text-brand-gold"
-                      >
-                        {imagePreview ? (
-                          <img src={imagePreview} alt="" className="h-16 w-16 rounded-lg object-cover" />
-                        ) : (
-                          <Upload size={20} />
-                        )}
-                        <span>{imagePreview ? 'Change image' : 'Click to upload product image'}</span>
+                      <div className="mb-3 flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setUseFileUpload(true)}
+                          className={`rounded-full px-3 py-1.5 text-[10px] font-medium uppercase tracking-wider ${
+                            useFileUpload ? 'bg-brand-black text-white' : 'bg-brand-ivory text-brand-stone'
+                          }`}
+                        >
+                          Upload file
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setUseFileUpload(false)}
+                          className={`rounded-full px-3 py-1.5 text-[10px] font-medium uppercase tracking-wider ${
+                            !useFileUpload ? 'bg-brand-black text-white' : 'bg-brand-ivory text-brand-stone'
+                          }`}
+                        >
+                          Use URL
+                        </button>
                       </div>
-                      <input
-                        ref={fileInputRef}
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          if (file) {
-                            setImageFile(file);
-                            setImagePreview(URL.createObjectURL(file));
-                          }
-                        }}
-                      />
+                      {useFileUpload ? (
+                        <>
+                          <div
+                            onClick={() => fileInputRef.current?.click()}
+                            className="flex cursor-pointer items-center gap-3 rounded-lg border-2 border-dashed border-brand-stone/30 px-4 py-6 text-sm text-brand-stone transition-colors hover:border-brand-gold/50 hover:text-brand-gold"
+                          >
+                            {imagePreview ? (
+                              <img src={imagePreview} alt="" className="h-16 w-16 rounded-lg object-cover" />
+                            ) : (
+                              <Upload size={20} />
+                            )}
+                            <span>{imagePreview ? 'Change image' : 'Click to upload product image'}</span>
+                          </div>
+                          <input
+                            ref={fileInputRef}
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) {
+                                setImageFile(file);
+                                setImagePreview(URL.createObjectURL(file));
+                              }
+                            }}
+                          />
+                        </>
+                      ) : (
+                        <input
+                          type="url"
+                          placeholder="https://example.com/image.jpg"
+                          value={imageUrl}
+                          onChange={(e) => setImageUrl(e.target.value)}
+                          className="w-full rounded-lg border px-4 py-2.5 text-sm focus:border-brand-gold focus:outline-none"
+                        />
+                      )}
                     </div>
                     <div className="tablet:col-span-2">
                       <button
@@ -316,76 +358,112 @@ export default function AdminDashboard() {
               ) : (
                 <div className="space-y-2">
                   {products.map((product) => (
-                    <div
-                      key={product.id}
-                      className="flex items-center justify-between rounded-xl bg-white px-6 py-4 shadow-sm"
-                    >
-                      <div className="flex items-center gap-4">
-                        <div className="relative h-12 w-12 overflow-hidden rounded-lg bg-brand-ivory">
-                          {product.images?.[0] ? (
-                            <img
-                              src={product.images[0].url}
-                              alt=""
-                              className="h-full w-full object-cover"
+                    <div key={product.id}>
+                      <div className="flex items-center justify-between rounded-xl bg-white px-6 py-4 shadow-sm">
+                        <div className="flex items-center gap-4">
+                          <div className="relative h-12 w-12 overflow-hidden rounded-lg bg-brand-ivory">
+                            {product.images?.[0] ? (
+                              <img
+                                src={product.images[0].url}
+                                alt=""
+                                className="h-full w-full object-cover"
+                              />
+                            ) : (
+                              <div className="flex h-full w-full items-center justify-center text-brand-stone">
+                                <Upload size={14} />
+                              </div>
+                            )}
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium">{product.name}</p>
+                            <p className="text-xs text-brand-stone">{product.category} — {formatCurrency(product.price)}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-4">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs text-brand-stone">Stock:</span>
+                            <input
+                              type="number"
+                              value={product.stock}
+                              onChange={(e) => handleUpdateStock(product.id, parseInt(e.target.value))}
+                              className="w-16 rounded-lg border px-2 py-1 text-xs text-center"
                             />
-                          ) : (
-                            <div className="flex h-full w-full items-center justify-center text-brand-stone">
-                              <Upload size={14} />
-                            </div>
-                          )}
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium">{product.name}</p>
-                          <p className="text-xs text-brand-stone">{product.category} — {formatCurrency(product.price)}</p>
+                          </div>
+                          <label className="cursor-pointer text-xs text-brand-gold hover:underline">
+                            Add Image
+                            <input
+                              type="file"
+                              accept="image/*"
+                              className="hidden"
+                              onChange={async (e) => {
+                                const file = e.target.files?.[0];
+                                if (!file) return;
+                                const reader = new FileReader();
+                                reader.readAsDataURL(file);
+                                reader.onload = async () => {
+                                  try {
+                                    const uploadRes = await api.post<{ success: boolean; data: { url: string; publicId: string } }>(
+                                      '/cloudinary/upload',
+                                      { image: reader.result, folder: 'velora' },
+                                    );
+                                    await api.post(`/admin/products/${product.id}/images`, {
+                                      url: uploadRes.data.url,
+                                      publicId: uploadRes.data.publicId,
+                                    });
+                                    loadData();
+                                    toast({ title: 'Image added', variant: 'success' });
+                                  } catch (err: any) {
+                                    toast({ title: 'Failed to add image', description: err.message, variant: 'destructive' });
+                                  }
+                                };
+                              }}
+                            />
+                          </label>
+                          <button
+                            onClick={() => setShowImageUrlInput(showImageUrlInput === product.id ? null : product.id)}
+                            className="text-xs text-brand-gold hover:underline"
+                          >
+                            Add URL
+                          </button>
+                          <button
+                            onClick={() => handleDeleteProduct(product.id)}
+                            className="text-xs text-destructive hover:underline"
+                          >
+                            Delete
+                          </button>
                         </div>
                       </div>
-                      <div className="flex items-center gap-4">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs text-brand-stone">Stock:</span>
+                      {showImageUrlInput === product.id && (
+                        <div className="flex gap-2 px-6 pb-4">
                           <input
-                            type="number"
-                            value={product.stock}
-                            onChange={(e) => handleUpdateStock(product.id, parseInt(e.target.value))}
-                            className="w-16 rounded-lg border px-2 py-1 text-xs text-center"
+                            type="url"
+                            placeholder="https://example.com/image.jpg"
+                            value={imageUrlInput}
+                            onChange={(e) => setImageUrlInput(e.target.value)}
+                            className="flex-1 rounded-lg border px-3 py-2 text-xs focus:border-brand-gold focus:outline-none"
                           />
-                        </div>
-                        <label className="cursor-pointer text-xs text-brand-gold hover:underline">
-                          Add Image
-                          <input
-                            type="file"
-                            accept="image/*"
-                            className="hidden"
-                            onChange={async (e) => {
-                              const file = e.target.files?.[0];
-                              if (!file) return;
-                              const reader = new FileReader();
-                              reader.readAsDataURL(file);
-                              reader.onload = async () => {
-                                try {
-                                  const uploadRes = await api.post<{ success: boolean; data: { url: string; publicId: string } }>(
-                                    '/cloudinary/upload',
-                                    { image: reader.result, folder: 'velora' },
-                                  );
-                                  await api.post(`/admin/products/${product.id}/images`, {
-                                    url: uploadRes.data.url,
-                                    publicId: uploadRes.data.publicId,
-                                  });
-                                  loadData();
-                                  toast({ title: 'Image added', variant: 'success' });
-                                } catch (err: any) {
-                                  toast({ title: 'Failed to add image', description: err.message, variant: 'destructive' });
-                                }
-                              };
+                          <button
+                            onClick={async () => {
+                              if (!imageUrlInput) return;
+                              try {
+                                await api.post(`/admin/products/${product.id}/images`, {
+                                  url: imageUrlInput,
+                                  publicId: `url-${Date.now()}`,
+                                });
+                                setImageUrlInput('');
+                                setShowImageUrlInput(null);
+                                loadData();
+                                toast({ title: 'Image added', variant: 'success' });
+                              } catch (err: any) {
+                                toast({ title: 'Failed to add image', description: err.message, variant: 'destructive' });
+                              }
                             }}
-                          />
-                        </label>
-                        <button
-                          onClick={() => handleDeleteProduct(product.id)}
-                          className="text-xs text-destructive hover:underline"
-                        >
-                          Delete
-                        </button>
-                      </div>
+                            className="rounded-full bg-brand-black px-4 py-2 text-[10px] font-medium uppercase tracking-wider text-white"
+                          >
+                            Save
+                          </button>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
