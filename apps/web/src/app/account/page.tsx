@@ -20,12 +20,16 @@ export default function AccountPage() {
   const { locale, t } = useLocale();
   const { user, clearSession } = useAuthStore();
   const router = useRouter();
+  const [mounted, setMounted] = useState(false);
   const [orders, setOrders] = useState<Order[]>([]);
   const [isSigningOut, setIsSigningOut] = useState(false);
   const signingOutRef = useRef(false);
   const supabase = createClient();
 
+  useEffect(() => { setMounted(true); }, []);
+
   useEffect(() => {
+    if (!mounted) return;
     if (!user) {
       router.push('/auth/login');
       return;
@@ -33,7 +37,7 @@ export default function AccountPage() {
     api.get<{ success: boolean; data: Order[] }>('/orders')
       .then((res) => setOrders(res.data || []))
       .catch(() => {});
-  }, [user, router]);
+  }, [user, router, mounted]);
 
   const handleLogout = useCallback(async () => {
     if (signingOutRef.current) return;
@@ -49,6 +53,7 @@ export default function AccountPage() {
     }
   }, [supabase, clearSession, router]);
 
+  if (!mounted) return null;
   if (!user) return null;
 
   const getStatusColor = (status: string) => {

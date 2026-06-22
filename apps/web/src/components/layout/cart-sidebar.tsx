@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { useCartStore } from '@/stores/cart-store';
 import { useAuthStore } from '@/stores/auth-store';
 import { useLocale } from '@/providers/locale-provider';
@@ -13,7 +14,10 @@ export function CartSidebar() {
   const { items, isOpen, closeCart, removeItem, updateQuantity, getTotal } = useCartStore();
   const user = useAuthStore((s) => s.user);
   const { locale, t } = useLocale();
+  const [mounted, setMounted] = useState(false);
   const total = getTotal();
+
+  useEffect(() => { setMounted(true); }, []);
 
   return (
     <AnimatePresence>
@@ -135,7 +139,7 @@ export function CartSidebar() {
                   <span className="text-lg font-semibold">{formatCurrency(total, currencyLocale(locale))}</span>
                 </div>
 
-                {user ? (
+                {mounted && user ? (
                   <Link
                     href="/checkout"
                     onClick={closeCart}
@@ -149,7 +153,7 @@ export function CartSidebar() {
                     onClick={closeCart}
                     className="flex h-12 w-full items-center justify-center rounded-full bg-brand-black text-sm font-medium uppercase tracking-wider text-white transition-all hover:bg-brand-black/90"
                   >
-                    {t('cart.signInToCheckout')}
+                    {mounted ? t('cart.signInToCheckout') : t('cart.checkout')}
                   </Link>
                 )}
 

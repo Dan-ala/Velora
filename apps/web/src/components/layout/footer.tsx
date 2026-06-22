@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useLocale } from '@/providers/locale-provider';
 
@@ -78,7 +79,7 @@ export function Footer() {
         </div>
 
         <div className="mt-16 border-t border-white/10 pt-8 text-center text-xs text-brand-stone/60">
-          &copy; {new Date().getFullYear()} VELORA. {t('footer.allRights')}
+          &copy; <span suppressHydrationWarning>{new Date().getFullYear()}</span> VELORA. {t('footer.allRights')}
         </div>
       </div>
     </footer>

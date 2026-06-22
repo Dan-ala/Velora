@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useCartStore } from '@/stores/cart-store';
@@ -18,8 +19,14 @@ const NAV_ITEMS = [
 export function BottomNav() {
   const { t } = useLocale();
   const pathname = usePathname();
+  const [mounted, setMounted] = useState(false);
   const itemCount = useCartStore((s) => s.getItemCount());
   const isAuthenticated = useAuthStore((s) => s.user !== null);
+
+  useEffect(() => { setMounted(true); }, []);
+
+  const profileLink = mounted && isAuthenticated ? '/account' : '/auth/login';
+  const profileLabel = mounted && isAuthenticated ? t('nav.myAccount') : t('nav.signIn');
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-40 border-t border-brand-ivory bg-white/95 backdrop-blur-sm pb-[env(safe-area-inset-bottom)] tablet:hidden">
@@ -29,15 +36,15 @@ export function BottomNav() {
           const isActive = pathname === item.href;
           const isCart = item.isCart;
 
-          if (item.requiresAuth && !isAuthenticated) {
+          if (item.requiresAuth) {
             return (
               <Link
                 key={item.href}
-                href="/auth/login"
+                href={profileLink}
                 className="flex flex-col items-center gap-0.5 px-3"
               >
-                <Icon size={20} className="text-brand-stone" />
-                <span className="text-[10px] text-brand-stone">{t(item.labelKey)}</span>
+                <Icon size={20} className={profileLink === '/account' ? 'text-brand-black' : 'text-brand-stone'} />
+                <span className="text-[10px] text-brand-stone">{profileLabel}</span>
               </Link>
             );
           }
