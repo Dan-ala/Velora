@@ -1,7 +1,7 @@
 import { createClient } from './supabase';
 import { useAuthStore } from '@/stores/auth-store';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://velora-api-w930.onrender.com/api';
 
 async function getAuthHeaders(): Promise<Record<string, string>> {
   const supabase = createClient();
