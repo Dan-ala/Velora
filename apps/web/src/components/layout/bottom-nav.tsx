@@ -60,8 +60,8 @@ export function BottomNav() {
                   size={20}
                   className={isActive ? 'text-brand-black' : 'text-brand-stone'}
                 />
-                <span className={`absolute -right-2 -top-2 flex h-4 w-4 items-center justify-center rounded-full bg-brand-black text-[8px] font-bold text-white transition-opacity ${isCart && itemCount > 0 ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
-                  {itemCount > 9 ? '9+' : itemCount}
+                <span className={`absolute -right-2 -top-2 flex h-4 w-4 items-center justify-center rounded-full bg-brand-black text-[8px] font-bold text-white transition-opacity ${isCart && mounted && itemCount > 0 ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
+                  {mounted ? (itemCount > 9 ? '9+' : itemCount) : 0}
                 </span>
               </div>
               <span
