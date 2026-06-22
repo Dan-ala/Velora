@@ -22,6 +22,7 @@ export default function AdminDashboard() {
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
   const [brokenImages, setBrokenImages] = useState<Set<string>>(new Set());
+  const [productDrafts, setProductDrafts] = useState<Record<string, Partial<Pick<Product, 'name' | 'price' | 'stock'>>>>({});
 
   const [formData, setFormData] = useState({
     name: '',
@@ -128,15 +129,6 @@ export default function AdminDashboard() {
     }
   };
 
-  const handleUpdateProduct = async (productId: string, data: Record<string, unknown>) => {
-    try {
-      await api.put(`/admin/products/${productId}`, data);
-      loadData();
-    } catch (err: any) {
-      toast({ title: 'Failed to update product', description: err.message, variant: 'destructive' });
-    }
-  };
-
   const handleUpdateStock = async (productId: string, stock: number) => {
     try {
       await api.put(`/admin/products/${productId}`, { stock });
@@ -144,6 +136,23 @@ export default function AdminDashboard() {
       toast({ title: 'Stock updated', variant: 'success' });
     } catch (err: any) {
       toast({ title: 'Failed to update stock', description: err.message, variant: 'destructive' });
+    }
+  };
+
+  const handleSaveProduct = async (productId: string) => {
+    const draft = productDrafts[productId];
+    if (!draft || Object.keys(draft).length === 0) return;
+    try {
+      await api.put(`/admin/products/${productId}`, draft);
+      setProductDrafts((prev) => {
+        const next = { ...prev };
+        delete next[productId];
+        return next;
+      });
+      loadData();
+      toast({ title: 'Product saved', variant: 'success' });
+    } catch (err: any) {
+      toast({ title: 'Failed to save product', description: err.message, variant: 'destructive' });
     }
   };
 
@@ -402,7 +411,10 @@ export default function AdminDashboard() {
                 </div>
               ) : (
                 <div className="space-y-2">
-                  {products.map((product) => (
+                  {products.map((product) => {
+                    const draft = productDrafts[product.id];
+                    const hasChanges = draft && Object.keys(draft).length > 0;
+                    return (
                     <div
                       key={product.id}
                       className="rounded-xl bg-white px-6 py-4 shadow-sm"
@@ -425,12 +437,8 @@ export default function AdminDashboard() {
                           </div>
                           <div className="min-w-0">
                             <input
-                              defaultValue={product.name}
-                              onBlur={(e) => {
-                                if (e.target.value !== product.name) {
-                                  handleUpdateProduct(product.id, { name: e.target.value });
-                                }
-                              }}
+                              value={draft?.name ?? product.name}
+                              onChange={(e) => setProductDrafts((prev) => ({ ...prev, [product.id]: { ...prev[product.id], name: e.target.value } }))}
                               className="w-full rounded border border-transparent px-1 py-0.5 text-sm font-medium hover:border-brand-stone/30 focus:border-brand-gold focus:outline-none"
                             />
                             <p className="text-xs text-brand-stone">{product.category}</p>
@@ -441,13 +449,8 @@ export default function AdminDashboard() {
                             <span className="text-xs text-brand-stone">Price:</span>
                             <input
                               type="number"
-                              defaultValue={product.price}
-                              onBlur={(e) => {
-                                const val = parseInt(e.target.value);
-                                if (val && val !== product.price) {
-                                  handleUpdateProduct(product.id, { price: val });
-                                }
-                              }}
+                              value={draft?.price ?? product.price}
+                              onChange={(e) => setProductDrafts((prev) => ({ ...prev, [product.id]: { ...prev[product.id], price: parseInt(e.target.value) } }))}
                               className="w-20 rounded-lg border px-2 py-1 text-xs text-center"
                             />
                           </div>
@@ -455,13 +458,8 @@ export default function AdminDashboard() {
                             <span className="text-xs text-brand-stone">Stock:</span>
                             <input
                               type="number"
-                              defaultValue={product.stock}
-                              onBlur={(e) => {
-                                const val = parseInt(e.target.value);
-                                if (val >= 0 && val !== product.stock) {
-                                  handleUpdateStock(product.id, val);
-                                }
-                              }}
+                              value={draft?.stock ?? product.stock}
+                              onChange={(e) => setProductDrafts((prev) => ({ ...prev, [product.id]: { ...prev[product.id], stock: parseInt(e.target.value) } }))}
                               className="w-16 rounded-lg border px-2 py-1 text-xs text-center"
                             />
                           </div>
@@ -499,6 +497,14 @@ export default function AdminDashboard() {
                               }}
                             />
                           </label>
+                          {hasChanges && (
+                            <button
+                              onClick={() => handleSaveProduct(product.id)}
+                              className="rounded-full bg-brand-black px-3 py-1.5 text-[10px] font-medium uppercase tracking-wider text-white"
+                            >
+                              Save
+                            </button>
+                          )}
                           <button
                             onClick={() => handleDeleteProduct(product.id)}
                             className="text-xs text-destructive hover:underline"
@@ -508,26 +514,30 @@ export default function AdminDashboard() {
                         </div>
                       </div>
                       {product.images.length > 0 && (
-                        <div className="mt-3 flex gap-2 border-t border-brand-stone/10 pt-3">
-                          {product.images.map((img) => (
-                            <div key={img.id} className="group relative h-14 w-14 flex-shrink-0 overflow-hidden rounded-lg bg-brand-ivory">
-                              <img
-                                src={img.url}
-                                alt=""
-                                className="h-full w-full object-cover"
-                              />
-                              <button
-                                onClick={() => handleDeleteImage(img.id)}
-                                className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-opacity group-hover:opacity-100"
-                              >
-                                <X size={16} className="text-white" />
-                              </button>
-                            </div>
-                          ))}
+                        <div className="mt-3 border-t border-brand-stone/10 pt-3">
+                          <p className="mb-2 text-[10px] font-medium uppercase tracking-wider text-brand-stone">Images</p>
+                          <div className="flex gap-2">
+                            {product.images.map((img) => (
+                              <div key={img.id} className="group relative h-14 w-14 flex-shrink-0 overflow-hidden rounded-lg bg-brand-ivory">
+                                <img
+                                  src={img.url}
+                                  alt=""
+                                  className="h-full w-full object-cover"
+                                />
+                                <button
+                                  onClick={() => handleDeleteImage(img.id)}
+                                  className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-opacity group-hover:opacity-100"
+                                >
+                                  <X size={16} className="text-white" />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
                         </div>
                       )}
                     </div>
-                  ))}
+                  );
+                  })}
                 </div>
               )}
             </div>
