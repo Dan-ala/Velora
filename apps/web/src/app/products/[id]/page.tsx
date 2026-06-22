@@ -28,6 +28,28 @@ export default function ProductDetailPage() {
   const addItem = useCartStore((s) => s.addItem);
   const openCart = useCartStore((s) => s.openCart);
 
+  const images = product?.images?.length ? product.images : [{ url: '', publicId: '', position: 0, id: '' }];
+  const isOutOfStock = product ? product.stock === 0 : true;
+
+  const handleAddToCart = useCallback(() => {
+    if (addingRef.current || !product) return;
+    addingRef.current = true;
+    setIsAdding(true);
+    addItem({
+      id: product.id,
+      productId: product.id,
+      name: product.name,
+      price: product.price,
+      image: images[0]?.url || '',
+      stock: product.stock,
+    });
+    openCart();
+    setTimeout(() => {
+      addingRef.current = false;
+      setIsAdding(false);
+    }, 500);
+  }, [addItem, openCart, product, images]);
+
   useEffect(() => {
     api.get<{ success: boolean; data: Product }>(`/products/${params.id}`)
       .then((res) => setProduct(res.data))
@@ -74,28 +96,6 @@ export default function ProductDetailPage() {
       </>
     );
   }
-
-  const images = product.images?.length ? product.images : [{ url: '', publicId: '', position: 0, id: '' }];
-  const isOutOfStock = product.stock === 0;
-
-  const handleAddToCart = useCallback(() => {
-    if (addingRef.current) return;
-    addingRef.current = true;
-    setIsAdding(true);
-    addItem({
-      id: product.id,
-      productId: product.id,
-      name: product.name,
-      price: product.price,
-      image: images[0]?.url || '',
-      stock: product.stock,
-    });
-    openCart();
-    setTimeout(() => {
-      addingRef.current = false;
-      setIsAdding(false);
-    }, 500);
-  }, [addItem, openCart, product, images]);
 
   return (
     <>
