@@ -311,16 +311,16 @@ function CheckoutContent() {
                       <button
                         type="button"
                         onClick={() => setBankOpen(!bankOpen)}
-                        className="mt-1 flex h-11 w-full items-center justify-between rounded-xl border border-brand-ivory px-4 text-sm transition-colors hover:border-brand-gold"
+                        className="mt-1 flex h-11 w-full items-center justify-between rounded-xl border border-brand-ivory px-4 text-sm text-brand-black transition-colors hover:border-brand-gold"
                       >
-                        <span className={selectedBank ? '' : 'text-brand-stone'}>
+                        <span className={selectedBank ? 'text-brand-black' : 'text-brand-stone'}>
                           {selectedBank
                             ? institutions.find((i) => i.code === selectedBank)?.name || selectedBank
                             : t('checkout.selectBank')}
                         </span>
                         <ChevronDown size={14} className={cn('transition-transform', bankOpen && 'rotate-180')} />
                       </button>
-                      {bankOpen && (
+                        {bankOpen && (
                         <div className="absolute z-10 mt-1 max-h-48 w-full overflow-y-auto rounded-xl border border-brand-ivory bg-white shadow-lg">
                           {institutions.map((inst) => (
                             <button
@@ -331,7 +331,7 @@ function CheckoutContent() {
                                 setBankOpen(false);
                               }}
                               className={cn(
-                                'w-full px-4 py-2.5 text-left text-sm transition-colors hover:bg-brand-ivory',
+                                'w-full px-4 py-2.5 text-left text-sm text-brand-black transition-colors hover:bg-brand-ivory',
                                 selectedBank === inst.code && 'bg-brand-ivory font-medium',
                               )}
                             >
