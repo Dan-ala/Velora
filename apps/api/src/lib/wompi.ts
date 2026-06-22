@@ -120,7 +120,10 @@ export async function getFinancialInstitutions() {
   if (!res.ok) {
     throw new Error(JSON.stringify(json.error || json));
   }
-  return json.data || [];
+  return (json.data || []).map((inst: any) => ({
+    code: inst.financial_institution_code,
+    name: inst.financial_institution_name,
+  }));
 }
 
 export function verifyWebhookSignature(
