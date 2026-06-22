@@ -41,7 +41,7 @@ export default function ProductsPage() {
     <>
       <Header />
       <CartSidebar />
-      <main className="min-h-screen pb-16 tablet:pb-0">
+      <main className="min-h-dynamic pb-16 tablet:pb-0">
         <div className="bg-brand-black py-12 tablet:py-16">
           <div className="mx-auto max-w-7xl px-4 tablet:px-6 wide:px-8">
             <motion.h1

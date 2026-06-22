@@ -22,7 +22,7 @@ export function BottomNav() {
   const isAuthenticated = useAuthStore((s) => s.user !== null);
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-40 border-t border-brand-ivory bg-white/95 backdrop-blur-sm tablet:hidden">
+    <nav className="fixed bottom-0 left-0 right-0 z-40 border-t border-brand-ivory bg-white/95 backdrop-blur-sm pb-[env(safe-area-inset-bottom)] tablet:hidden">
       <div className="flex items-center justify-around py-2">
         {NAV_ITEMS.map((item) => {
           const Icon = item.icon;

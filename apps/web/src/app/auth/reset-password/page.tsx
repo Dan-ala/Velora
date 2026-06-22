@@ -34,7 +34,7 @@ export default function ResetPasswordPage() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-brand-ivory px-4">
+    <div className="flex min-h-dynamic flex-col items-center justify-center bg-brand-ivory px-4">
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-sm">
         <Link href="/" className="mb-8 block text-center font-display text-3xl font-bold tracking-[0.3em]">VELORA</Link>
         <div className="rounded-2xl bg-white p-8 shadow-sm">

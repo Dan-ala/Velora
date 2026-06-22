@@ -38,7 +38,7 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-brand-ivory px-4">
+    <div className="flex min-h-dynamic flex-col items-center justify-center bg-brand-ivory px-4">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}

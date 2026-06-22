@@ -210,7 +210,7 @@ export default function AdminDashboard() {
     .reduce((sum, o) => sum + o.total, 0);
 
   return (
-    <div className="min-h-screen bg-brand-ivory">
+    <div className="min-h-dynamic bg-brand-ivory">
       <header className="sticky top-0 z-50 bg-brand-black text-white">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 tablet:px-6">
           <div className="flex items-center gap-4">

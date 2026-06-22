@@ -62,7 +62,7 @@ export default function ProductDetailPage() {
       <>
         <Header />
         <CartSidebar />
-        <main className="min-h-screen pb-16 tablet:pb-0">
+        <main className="min-h-dynamic pb-16 tablet:pb-0">
           <div className="mx-auto max-w-7xl px-4 py-8 tablet:px-6">
             <div className="animate-pulse grid gap-8 tablet:grid-cols-2">
               <div className="aspect-[4/5] rounded-2xl bg-brand-ivory" />
@@ -84,7 +84,7 @@ export default function ProductDetailPage() {
       <>
         <Header />
         <CartSidebar />
-        <main className="flex min-h-screen items-center justify-center pb-16 tablet:pb-0">
+        <main className="flex min-h-dynamic items-center justify-center pb-16 tablet:pb-0">
           <div className="text-center">
             <p className="text-brand-stone">{t('common.productNotFound')}</p>
             <Link href="/products" className="mt-4 inline-flex text-sm text-brand-gold underline underline-offset-4">
@@ -102,7 +102,7 @@ export default function ProductDetailPage() {
       <Header />
       <CartSidebar />
 
-      <main className="min-h-screen pb-16 tablet:pb-0">
+      <main className="min-h-dynamic pb-16 tablet:pb-0">
         <div className="mx-auto max-w-7xl px-4 py-6 tablet:px-6 wide:px-8">
           <Link
             href="/products"

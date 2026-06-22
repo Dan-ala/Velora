@@ -22,7 +22,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="es-CO">
-      <body className="min-h-screen bg-brand-ivory">
+      <body className="min-h-dynamic bg-brand-ivory">
         <QueryProvider>
           <AuthProvider>
             <LocaleProvider>

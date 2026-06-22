@@ -57,7 +57,7 @@ export default function CheckoutPage() {
       <>
         <Header />
         <CartSidebar />
-        <main className="flex min-h-screen items-center justify-center pb-16 tablet:pb-0">
+        <main className="flex min-h-dynamic items-center justify-center pb-16 tablet:pb-0">
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -88,7 +88,7 @@ export default function CheckoutPage() {
       <>
         <Header />
         <CartSidebar />
-        <main className="flex min-h-screen items-center justify-center pb-16 tablet:pb-0">
+        <main className="flex min-h-dynamic items-center justify-center pb-16 tablet:pb-0">
           <div className="text-center">
             <p className="text-brand-stone">{t('checkout.empty')}</p>
             <Link
@@ -109,7 +109,7 @@ export default function CheckoutPage() {
       <Header />
       <CartSidebar />
 
-      <main className="min-h-screen pb-16 tablet:pb-0">
+      <main className="min-h-dynamic pb-16 tablet:pb-0">
         <div className="bg-brand-black py-12 tablet:py-16">
           <div className="mx-auto max-w-7xl px-4 tablet:px-6 wide:px-8">
             <h1 className="font-display text-3xl font-bold text-white tablet:text-5xl">{t('checkout.title')}</h1>
