@@ -128,6 +128,15 @@ export default function AdminDashboard() {
     }
   };
 
+  const handleUpdateProduct = async (productId: string, data: Record<string, unknown>) => {
+    try {
+      await api.put(`/admin/products/${productId}`, data);
+      loadData();
+    } catch (err: any) {
+      toast({ title: 'Failed to update product', description: err.message, variant: 'destructive' });
+    }
+  };
+
   const handleUpdateStock = async (productId: string, stock: number) => {
     try {
       await api.put(`/admin/products/${productId}`, { stock });
@@ -135,6 +144,16 @@ export default function AdminDashboard() {
       toast({ title: 'Stock updated', variant: 'success' });
     } catch (err: any) {
       toast({ title: 'Failed to update stock', description: err.message, variant: 'destructive' });
+    }
+  };
+
+  const handleDeleteImage = async (imageId: string) => {
+    try {
+      await api.delete(`/admin/products/images/${imageId}`);
+      loadData();
+      toast({ title: 'Image deleted', variant: 'success' });
+    } catch (err: any) {
+      toast({ title: 'Failed to delete image', description: err.message, variant: 'destructive' });
     }
   };
 
@@ -386,79 +405,127 @@ export default function AdminDashboard() {
                   {products.map((product) => (
                     <div
                       key={product.id}
-                      className="flex items-center justify-between rounded-xl bg-white px-6 py-4 shadow-sm"
+                      className="rounded-xl bg-white px-6 py-4 shadow-sm"
                     >
-                      <div className="flex items-center gap-4">
-                        <div className="relative h-12 w-12 overflow-hidden rounded-lg bg-brand-ivory">
-                          {product.images?.[0] && !brokenImages.has(product.images[0].url) ? (
-                            <img
-                              src={product.images[0].url}
-                              alt=""
-                              className="h-full w-full object-cover"
-                              onError={() => setBrokenImages((prev) => new Set(prev).add(product.images![0].url))}
-                            />
-                          ) : (
-                            <div className="flex h-full w-full items-center justify-center text-brand-stone">
-                              <Upload size={14} />
-                            </div>
-                          )}
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium">{product.name}</p>
-                          <p className="text-xs text-brand-stone">{product.category} — {formatCurrency(product.price)}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-4">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs text-brand-stone">Stock:</span>
-                          <input
-                            type="number"
-                            value={product.stock}
-                            onChange={(e) => handleUpdateStock(product.id, parseInt(e.target.value))}
-                            className="w-16 rounded-lg border px-2 py-1 text-xs text-center"
-                          />
-                        </div>
-                        <label className="cursor-pointer text-xs text-brand-gold hover:underline">
-                          Add Image
-                          <input
-                            type="file"
-                            accept="image/*"
-                            className="hidden"
-                            onChange={async (e) => {
-                              const file = e.target.files?.[0];
-                              if (!file) return;
-                              const reader = new FileReader();
-                              reader.readAsDataURL(file);
-                              reader.onload = async () => {
-                                try {
-                                  const uploadRes = await api.post<{ success: boolean; data: { url: string; publicId: string } }>(
-                                    '/cloudinary/upload',
-                                    { image: reader.result, folder: 'velora' },
-                                  );
-                                  await api.post(`/admin/products/${product.id}/images`, {
-                                    url: uploadRes.data.url,
-                                    publicId: uploadRes.data.publicId,
-                                    position: 0,
-                                  });
-                                  loadData();
-                                  toast({ title: 'Image added', variant: 'success' });
-                                } catch (err: any) {
-                                  toast({ title: 'Failed to add image', description: err.message, variant: 'destructive' });
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                          <div className="relative h-12 w-12 flex-shrink-0 overflow-hidden rounded-lg bg-brand-ivory">
+                            {product.images?.[0] && !brokenImages.has(product.images[0].url) ? (
+                              <img
+                                src={product.images[0].url}
+                                alt=""
+                                className="h-full w-full object-cover"
+                                onError={() => setBrokenImages((prev) => new Set(prev).add(product.images![0].url))}
+                              />
+                            ) : (
+                              <div className="flex h-full w-full items-center justify-center text-brand-stone">
+                                <Upload size={14} />
+                              </div>
+                            )}
+                          </div>
+                          <div className="min-w-0">
+                            <input
+                              defaultValue={product.name}
+                              onBlur={(e) => {
+                                if (e.target.value !== product.name) {
+                                  handleUpdateProduct(product.id, { name: e.target.value });
                                 }
-                              };
-                              reader.onerror = () => {
-                                toast({ title: 'Failed to read file', variant: 'destructive' });
-                              };
-                            }}
-                          />
-                        </label>
-                        <button
-                          onClick={() => handleDeleteProduct(product.id)}
-                          className="text-xs text-destructive hover:underline"
-                        >
-                          Delete
-                        </button>
+                              }}
+                              className="w-full rounded border border-transparent px-1 py-0.5 text-sm font-medium hover:border-brand-stone/30 focus:border-brand-gold focus:outline-none"
+                            />
+                            <p className="text-xs text-brand-stone">{product.category}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-xs text-brand-stone">Price:</span>
+                            <input
+                              type="number"
+                              defaultValue={product.price}
+                              onBlur={(e) => {
+                                const val = parseInt(e.target.value);
+                                if (val && val !== product.price) {
+                                  handleUpdateProduct(product.id, { price: val });
+                                }
+                              }}
+                              className="w-20 rounded-lg border px-2 py-1 text-xs text-center"
+                            />
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-xs text-brand-stone">Stock:</span>
+                            <input
+                              type="number"
+                              defaultValue={product.stock}
+                              onBlur={(e) => {
+                                const val = parseInt(e.target.value);
+                                if (val >= 0 && val !== product.stock) {
+                                  handleUpdateStock(product.id, val);
+                                }
+                              }}
+                              className="w-16 rounded-lg border px-2 py-1 text-xs text-center"
+                            />
+                          </div>
+                          <label className="cursor-pointer text-xs text-brand-gold hover:underline">
+                            Add Image
+                            <input
+                              type="file"
+                              accept="image/*"
+                              className="hidden"
+                              onChange={async (e) => {
+                                const file = e.target.files?.[0];
+                                if (!file) return;
+                                const reader = new FileReader();
+                                reader.readAsDataURL(file);
+                                reader.onload = async () => {
+                                  try {
+                                    const uploadRes = await api.post<{ success: boolean; data: { url: string; publicId: string } }>(
+                                      '/cloudinary/upload',
+                                      { image: reader.result, folder: 'velora' },
+                                    );
+                                    await api.post(`/admin/products/${product.id}/images`, {
+                                      url: uploadRes.data.url,
+                                      publicId: uploadRes.data.publicId,
+                                      position: 0,
+                                    });
+                                    loadData();
+                                    toast({ title: 'Image added', variant: 'success' });
+                                  } catch (err: any) {
+                                    toast({ title: 'Failed to add image', description: err.message, variant: 'destructive' });
+                                  }
+                                };
+                                reader.onerror = () => {
+                                  toast({ title: 'Failed to read file', variant: 'destructive' });
+                                };
+                              }}
+                            />
+                          </label>
+                          <button
+                            onClick={() => handleDeleteProduct(product.id)}
+                            className="text-xs text-destructive hover:underline"
+                          >
+                            Delete
+                          </button>
+                        </div>
                       </div>
+                      {product.images.length > 0 && (
+                        <div className="mt-3 flex gap-2 border-t border-brand-stone/10 pt-3">
+                          {product.images.map((img) => (
+                            <div key={img.id} className="group relative h-14 w-14 flex-shrink-0 overflow-hidden rounded-lg bg-brand-ivory">
+                              <img
+                                src={img.url}
+                                alt=""
+                                className="h-full w-full object-cover"
+                              />
+                              <button
+                                onClick={() => handleDeleteImage(img.id)}
+                                className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-opacity group-hover:opacity-100"
+                              >
+                                <X size={16} className="text-white" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
