@@ -54,7 +54,7 @@ export function CartSidebar() {
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto px-6 py-4">
+            <div className="flex-1 overflow-y-auto px-4 py-3 tablet:px-6 tablet:py-4 min-h-0">
               {items.length === 0 ? (
                 <div className="flex h-full flex-col items-center justify-center text-center">
                   <ShoppingBag size={48} className="mb-4 text-brand-stone/50" />
@@ -76,9 +76,9 @@ export function CartSidebar() {
                         initial={{ opacity: 0, x: 20 }}
                         animate={{ opacity: 1, x: 0 }}
                         exit={{ opacity: 0, x: 20 }}
-                        className="flex gap-4"
+                        className="flex gap-3 tablet:gap-4"
                       >
-                        <div className="relative h-20 w-20 flex-shrink-0 overflow-hidden rounded-lg bg-brand-ivory">
+                        <div className="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-lg bg-brand-ivory tablet:h-20 tablet:w-20">
                           <Image
                             src={item.image}
                             alt={item.name}
@@ -133,7 +133,7 @@ export function CartSidebar() {
             </div>
 
             {items.length > 0 && (
-              <div className="border-t border-brand-ivory px-6 py-4">
+              <div className="border-t border-brand-ivory px-4 py-4 tablet:px-6 pb-[max(1rem,env(safe-area-inset-bottom))]">
                 <div className="mb-4 flex items-center justify-between">
                   <span className="text-sm uppercase tracking-wider">{t('common.total')}</span>
                   <span className="text-lg font-semibold">{formatCurrency(total, currencyLocale(locale))}</span>
