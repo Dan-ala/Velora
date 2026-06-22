@@ -1,13 +1,14 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/stores/auth-store';
 import { api } from '@/lib/api';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { motion } from 'framer-motion';
-import { Package, ShoppingBag, TrendingUp, AlertTriangle, Plus, X, Upload } from 'lucide-react';
+import { Package, ShoppingBag, TrendingUp, AlertTriangle, Plus, X, Upload, Search } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { CATEGORIES, CATEGORY_LABELS } from '@velora/types';
 import type { Product, Order } from '@velora/types';
 
 export default function AdminDashboard() {
@@ -18,6 +19,9 @@ export default function AdminDashboard() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [showProductForm, setShowProductForm] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('');
+  const [brokenImages, setBrokenImages] = useState<Set<string>>(new Set());
 
   const [formData, setFormData] = useState({
     name: '',
@@ -31,27 +35,45 @@ export default function AdminDashboard() {
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const loadProducts = useCallback(async (search: string, category: string) => {
+    const params = new URLSearchParams();
+    params.set('limit', '100');
+    if (search) params.set('search', search);
+    if (category) params.set('category', category);
+    const res = await api.get<{ success: boolean; data: Product[] }>(`/admin/products?${params}`);
+    setProducts(res.data || []);
+  }, []);
+
+  const loadOrders = useCallback(async () => {
+    const res = await api.get<{ success: boolean; data: Order[] }>('/admin/orders?limit=100');
+    setOrders(res.data || []);
+  }, []);
+
+  const loadData = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      if (activeTab === 'products') {
+        await loadProducts(searchQuery, categoryFilter);
+      } else if (activeTab === 'orders') {
+        await loadOrders();
+      }
+    } catch {}
+    setIsLoading(false);
+  }, [activeTab, searchQuery, categoryFilter, loadProducts, loadOrders]);
+
   useEffect(() => {
     if (!user || user.role !== 'admin') {
       router.push('/');
       return;
     }
     loadData();
-  }, [user, router, activeTab]);
+  }, [user, router, loadData]);
 
-  const loadData = async () => {
-    setIsLoading(true);
-    try {
-      if (activeTab === 'products') {
-        const res = await api.get<{ success: boolean; data: Product[] }>('/admin/products?limit=100');
-        setProducts(res.data || []);
-      } else if (activeTab === 'orders') {
-        const res = await api.get<{ success: boolean; data: Order[] }>('/admin/orders?limit=100');
-        setOrders(res.data || []);
-      }
-    } catch {}
-    setIsLoading(false);
-  };
+  useEffect(() => {
+    if (activeTab !== 'products') return;
+    const timer = setTimeout(() => loadData(), 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery, categoryFilter, loadData, activeTab]);
 
   const toBase64 = (file: File): Promise<string> =>
     new Promise((resolve, reject) => {
@@ -210,6 +232,52 @@ export default function AdminDashboard() {
                 </button>
               </div>
 
+              <div className="mb-4 flex flex-col gap-3 tablet:flex-row tablet:items-center">
+                <div className="relative flex-1">
+                  <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-brand-stone" />
+                  <input
+                    type="text"
+                    placeholder="Search products..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full rounded-lg border px-9 py-2.5 text-sm focus:border-brand-gold focus:outline-none"
+                  />
+                  {searchQuery && (
+                    <button
+                      onClick={() => setSearchQuery('')}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-brand-stone hover:text-brand-black"
+                    >
+                      <X size={16} />
+                    </button>
+                  )}
+                </div>
+                <div className="flex gap-2 overflow-x-auto">
+                  <button
+                    onClick={() => setCategoryFilter('')}
+                    className={`whitespace-nowrap rounded-full px-4 py-2 text-xs font-medium transition-colors ${
+                      categoryFilter === ''
+                        ? 'bg-brand-black text-white'
+                        : 'bg-white text-brand-stone hover:text-brand-black'
+                    }`}
+                  >
+                    All
+                  </button>
+                  {CATEGORIES.map((cat) => (
+                    <button
+                      key={cat}
+                      onClick={() => setCategoryFilter(cat)}
+                      className={`whitespace-nowrap rounded-full px-4 py-2 text-xs font-medium capitalize transition-colors ${
+                        categoryFilter === cat
+                          ? 'bg-brand-black text-white'
+                          : 'bg-white text-brand-stone hover:text-brand-black'
+                      }`}
+                    >
+                      {CATEGORY_LABELS[cat]}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               {showProductForm && (
                 <motion.div
                   initial={{ opacity: 0, y: -10 }}
@@ -322,11 +390,12 @@ export default function AdminDashboard() {
                     >
                       <div className="flex items-center gap-4">
                         <div className="relative h-12 w-12 overflow-hidden rounded-lg bg-brand-ivory">
-                          {product.images?.[0] ? (
+                          {product.images?.[0] && !brokenImages.has(product.images[0].url) ? (
                             <img
                               src={product.images[0].url}
                               alt=""
                               className="h-full w-full object-cover"
+                              onError={() => setBrokenImages((prev) => new Set(prev).add(product.images![0].url))}
                             />
                           ) : (
                             <div className="flex h-full w-full items-center justify-center text-brand-stone">

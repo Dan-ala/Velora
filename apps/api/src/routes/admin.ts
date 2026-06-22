@@ -11,6 +11,8 @@ export async function adminRoutes(app: FastifyInstance) {
     const query = z.object({
       page: z.coerce.number().optional().default(1),
       limit: z.coerce.number().optional().default(50),
+      search: z.string().optional(),
+      category: z.string().optional(),
     }).parse(request.query);
 
     const result = await productService.findAll(query);
