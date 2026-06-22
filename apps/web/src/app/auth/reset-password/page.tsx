@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { createClient } from '@/lib/supabase';
 import { useLocale } from '@/providers/locale-provider';
 import Link from 'next/link';
@@ -11,14 +11,21 @@ export default function ResetPasswordPage() {
   const [email, setEmail] = useState('');
   const [sent, setSent] = useState(false);
   const [error, setError] = useState('');
+  const [isSending, setIsSending] = useState(false);
+  const sendingRef = useRef(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (sendingRef.current) return;
+    sendingRef.current = true;
+    setIsSending(true);
     setError('');
     const supabase = createClient();
     const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${window.location.origin}/auth/update-password`,
     });
+    sendingRef.current = false;
+    setIsSending(false);
     if (resetError) {
       setError(resetError.message);
     } else {
@@ -50,8 +57,8 @@ export default function ResetPasswordPage() {
                     placeholder="your@email.com"
                   />
                 </div>
-                <button type="submit" className="flex h-12 w-full items-center justify-center rounded-full bg-brand-black text-sm font-medium uppercase tracking-wider text-white">
-                  {t('auth.sendResetLink')}
+                <button type="submit" disabled={isSending} className="flex h-12 w-full items-center justify-center rounded-full bg-brand-black text-sm font-medium uppercase tracking-wider text-white disabled:opacity-50">
+                  {isSending ? t('auth.sending') || 'Sending...' : t('auth.sendResetLink')}
                 </button>
               </form>
               <p className="mt-6 text-center text-xs text-brand-stone">

@@ -23,6 +23,21 @@ export default function AdminDashboard() {
   const [categoryFilter, setCategoryFilter] = useState('');
   const [brokenImages, setBrokenImages] = useState<Set<string>>(new Set());
   const [productDrafts, setProductDrafts] = useState<Record<string, Partial<Pick<Product, 'name' | 'price' | 'stock'>>>>({});
+  const [processing, setProcessing] = useState<Set<string>>(new Set());
+
+  const withProcessing = async (key: string, fn: () => Promise<void>) => {
+    if (processing.has(key)) return;
+    setProcessing((prev) => new Set(prev).add(key));
+    try {
+      await fn();
+    } finally {
+      setProcessing((prev) => {
+        const next = new Set(prev);
+        next.delete(key);
+        return next;
+      });
+    }
+  };
 
   const [formData, setFormData] = useState({
     name: '',
@@ -463,53 +478,52 @@ export default function AdminDashboard() {
                               className="w-16 rounded-lg border px-2 py-1 text-xs text-center"
                             />
                           </div>
-                          <label className="cursor-pointer text-xs text-brand-gold hover:underline">
-                            Add Image
+                          <label className={`cursor-pointer text-xs ${processing.has(`uploadImage-${product.id}`) ? 'text-brand-stone/50' : 'text-brand-gold hover:underline'}`}>
+                            {processing.has(`uploadImage-${product.id}`) ? 'Uploading...' : 'Add Image'}
                             <input
                               type="file"
                               accept="image/*"
                               className="hidden"
+                              disabled={processing.has(`uploadImage-${product.id}`)}
                               onChange={async (e) => {
                                 const file = e.target.files?.[0];
                                 if (!file) return;
-                                const reader = new FileReader();
-                                reader.readAsDataURL(file);
-                                reader.onload = async () => {
-                                  try {
-                                    const uploadRes = await api.post<{ success: boolean; data: { url: string; publicId: string } }>(
-                                      '/cloudinary/upload',
-                                      { image: reader.result, folder: 'velora' },
-                                    );
-                                    await api.post(`/admin/products/${product.id}/images`, {
-                                      url: uploadRes.data.url,
-                                      publicId: uploadRes.data.publicId,
-                                      position: 0,
-                                    });
-                                    loadData();
-                                    toast({ title: 'Image added', variant: 'success' });
-                                  } catch (err: any) {
-                                    toast({ title: 'Failed to add image', description: err.message, variant: 'destructive' });
-                                  }
-                                };
-                                reader.onerror = () => {
-                                  toast({ title: 'Failed to read file', variant: 'destructive' });
-                                };
+                                e.target.value = '';
+                                const key = `uploadImage-${product.id}`;
+                                await withProcessing(key, async () => {
+                                  const b64 = await toBase64(file);
+                                  const uploadRes = await api.post<{ success: boolean; data: { url: string; publicId: string } }>(
+                                    '/cloudinary/upload',
+                                    { image: b64, folder: 'velora' },
+                                  );
+                                  await api.post(`/admin/products/${product.id}/images`, {
+                                    url: uploadRes.data.url,
+                                    publicId: uploadRes.data.publicId,
+                                    position: 0,
+                                  });
+                                  loadData();
+                                  toast({ title: 'Image added', variant: 'success' });
+                                }).catch((err: any) => {
+                                  toast({ title: 'Failed to add image', description: err.message, variant: 'destructive' });
+                                });
                               }}
                             />
                           </label>
                           {hasChanges && (
                             <button
-                              onClick={() => handleSaveProduct(product.id)}
-                              className="rounded-full bg-brand-black px-3 py-1.5 text-[10px] font-medium uppercase tracking-wider text-white"
+                              onClick={() => withProcessing(`save-${product.id}`, () => handleSaveProduct(product.id))}
+                              disabled={processing.has(`save-${product.id}`)}
+                              className="rounded-full bg-brand-black px-3 py-1.5 text-[10px] font-medium uppercase tracking-wider text-white disabled:opacity-50"
                             >
-                              Save
+                              {processing.has(`save-${product.id}`) ? 'Saving...' : 'Save'}
                             </button>
                           )}
                           <button
-                            onClick={() => handleDeleteProduct(product.id)}
-                            className="text-xs text-destructive hover:underline"
+                            onClick={() => withProcessing(`delete-${product.id}`, () => handleDeleteProduct(product.id))}
+                            disabled={processing.has(`delete-${product.id}`)}
+                            className="text-xs text-destructive hover:underline disabled:opacity-50"
                           >
-                            Delete
+                            {processing.has(`delete-${product.id}`) ? 'Deleting...' : 'Delete'}
                           </button>
                         </div>
                       </div>
@@ -525,8 +539,9 @@ export default function AdminDashboard() {
                                   className="h-full w-full object-cover"
                                 />
                                 <button
-                                  onClick={() => handleDeleteImage(img.id)}
-                                  className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-opacity group-hover:opacity-100"
+                                  onClick={() => withProcessing(`deleteImage-${img.id}`, () => handleDeleteImage(img.id))}
+                                  disabled={processing.has(`deleteImage-${img.id}`)}
+                                  className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-opacity group-hover:opacity-100 disabled:opacity-100"
                                 >
                                   <X size={16} className="text-white" />
                                 </button>

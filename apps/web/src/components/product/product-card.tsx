@@ -10,6 +10,7 @@ import { motion } from 'framer-motion';
 import { toast } from '@/hooks/use-toast';
 import type { Product } from '@velora/types';
 import { cn } from '@/lib/utils';
+import { useRef, useCallback } from 'react';
 
 interface Props {
   product: Product;
@@ -22,11 +23,14 @@ export function ProductCard({ product, priority = false }: Props) {
   const { locale, t } = useLocale();
   const image = product.images?.[0];
   const hasDiscount = false;
+  const addingRef = useRef(false);
 
-  const handleAddToCart = (e: React.MouseEvent) => {
+  const handleAddToCart = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    if (addingRef.current) return;
     if (image) {
+      addingRef.current = true;
       addItem({
         id: product.id,
         productId: product.id,
@@ -37,8 +41,9 @@ export function ProductCard({ product, priority = false }: Props) {
       });
       openCart();
       toast({ title: t('common.addedToCart'), description: product.name, variant: 'success' });
+      setTimeout(() => { addingRef.current = false; }, 500);
     }
-  };
+  }, [addItem, openCart, t, image, product]);
 
   return (
     <motion.div

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import { Header } from '@/components/layout/header';
 import { Footer } from '@/components/layout/footer';
@@ -23,6 +23,8 @@ export default function ProductDetailPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [currentImage, setCurrentImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
+  const [isAdding, setIsAdding] = useState(false);
+  const addingRef = useRef(false);
   const addItem = useCartStore((s) => s.addItem);
   const openCart = useCartStore((s) => s.openCart);
 
@@ -76,7 +78,10 @@ export default function ProductDetailPage() {
   const images = product.images?.length ? product.images : [{ url: '', publicId: '', position: 0, id: '' }];
   const isOutOfStock = product.stock === 0;
 
-  const handleAddToCart = () => {
+  const handleAddToCart = useCallback(() => {
+    if (addingRef.current) return;
+    addingRef.current = true;
+    setIsAdding(true);
     addItem({
       id: product.id,
       productId: product.id,
@@ -86,7 +91,11 @@ export default function ProductDetailPage() {
       stock: product.stock,
     });
     openCart();
-  };
+    setTimeout(() => {
+      addingRef.current = false;
+      setIsAdding(false);
+    }, 500);
+  }, [addItem, openCart, product, images]);
 
   return (
     <>
@@ -236,11 +245,11 @@ export default function ProductDetailPage() {
                 <div className="flex flex-col gap-3 tablet:flex-row">
                   <button
                     onClick={handleAddToCart}
-                    disabled={isOutOfStock}
+                    disabled={isOutOfStock || isAdding}
                     className="flex h-12 flex-1 items-center justify-center gap-2 rounded-full bg-brand-black text-sm font-medium uppercase tracking-wider text-white transition-all hover:bg-brand-black/90 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     <ShoppingBag size={16} />
-                    {isOutOfStock ? t('common.outOfStock') : t('common.addToCart')}
+                    {isOutOfStock ? t('common.outOfStock') : isAdding ? t('common.adding') || 'Adding...' : t('common.addToCart')}
                   </button>
                 </div>
               </div>

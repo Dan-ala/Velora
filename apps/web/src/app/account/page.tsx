@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Header } from '@/components/layout/header';
 import { Footer } from '@/components/layout/footer';
@@ -21,6 +21,8 @@ export default function AccountPage() {
   const { user, clearSession } = useAuthStore();
   const router = useRouter();
   const [orders, setOrders] = useState<Order[]>([]);
+  const [isSigningOut, setIsSigningOut] = useState(false);
+  const signingOutRef = useRef(false);
   const supabase = createClient();
 
   useEffect(() => {
@@ -33,11 +35,19 @@ export default function AccountPage() {
       .catch(() => {});
   }, [user, router]);
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    clearSession();
-    router.push('/');
-  };
+  const handleLogout = useCallback(async () => {
+    if (signingOutRef.current) return;
+    signingOutRef.current = true;
+    setIsSigningOut(true);
+    try {
+      await supabase.auth.signOut();
+      clearSession();
+      router.push('/');
+    } finally {
+      signingOutRef.current = false;
+      setIsSigningOut(false);
+    }
+  }, [supabase, clearSession, router]);
 
   if (!user) return null;
 
@@ -89,9 +99,10 @@ export default function AccountPage() {
                 </div>
                 <button
                   onClick={handleLogout}
-                  className="mt-4 flex w-full items-center justify-center gap-2 rounded-full border py-2.5 text-xs font-medium uppercase tracking-wider transition-colors hover:bg-brand-ivory"
+                  disabled={isSigningOut}
+                  className="mt-4 flex w-full items-center justify-center gap-2 rounded-full border py-2.5 text-xs font-medium uppercase tracking-wider transition-colors hover:bg-brand-ivory disabled:opacity-50"
                 >
-                  <LogOut size={14} /> {t('account.signOut')}
+                  <LogOut size={14} /> {isSigningOut ? t('account.signingOut') || 'Signing out...' : t('account.signOut')}
                 </button>
               </div>
 
