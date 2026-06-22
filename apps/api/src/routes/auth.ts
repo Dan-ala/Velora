@@ -85,7 +85,7 @@ export async function authRoutes(app: FastifyInstance) {
     const { email } = z.object({ email: z.string().email() }).parse(request.body);
     const supabase = getSupabase();
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${process.env.FRONTEND_URL}/auth/reset-password`,
+      redirectTo: `${process.env.FRONTEND_URL}/auth/update-password`,
     });
 
     if (error) {

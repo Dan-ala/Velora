@@ -91,6 +91,29 @@ export default function AdminDashboard() {
     return () => clearTimeout(timer);
   }, [searchQuery, categoryFilter, loadData, activeTab]);
 
+  const compressImage = (file: File, maxDim: number = 1200): Promise<File> =>
+    new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let { width, height } = img;
+        if (width > maxDim || height > maxDim) {
+          if (width > height) { height = (height / width) * maxDim; width = maxDim; }
+          else { width = (width / height) * maxDim; height = maxDim; }
+        }
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d')!;
+        ctx.drawImage(img, 0, 0, width, height);
+        canvas.toBlob((blob) => {
+          if (!blob) { reject(new Error('Image compression failed')); return; }
+          resolve(new File([blob], file.name, { type: 'image/jpeg', lastModified: Date.now() }));
+        }, 'image/jpeg', 0.85);
+      };
+      img.onerror = reject;
+      img.src = URL.createObjectURL(file);
+    });
+
   const toBase64 = (file: File): Promise<string> =>
     new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -107,7 +130,8 @@ export default function AdminDashboard() {
       let imagePublicId = '';
 
       if (imageFile) {
-        const b64 = await toBase64(imageFile);
+        const compressed = await compressImage(imageFile);
+        const b64 = await toBase64(compressed);
         const uploadRes = await api.post<{ success: boolean; data: { url: string; publicId: string } }>(
           '/cloudinary/upload',
           { image: b64, folder: 'velora' },
@@ -236,12 +260,12 @@ export default function AdminDashboard() {
             { label: 'Revenue', value: formatCurrency(totalRevenue), icon: TrendingUp, color: 'text-green-600 bg-green-50' },
             { label: 'Low Stock', value: lowStockProducts.length, icon: AlertTriangle, color: 'text-orange-600 bg-orange-50' },
           ].map((stat) => (
-            <div key={stat.label} className="rounded-xl bg-white p-4 shadow-sm">
-              <div className={`mb-3 flex h-10 w-10 items-center justify-center rounded-lg ${stat.color}`}>
-                <stat.icon size={20} />
+            <div key={stat.label} className="rounded-xl bg-white p-3 shadow-sm tablet:p-4">
+              <div className={`mb-2 flex h-8 w-8 items-center justify-center rounded-lg tablet:mb-3 tablet:h-10 tablet:w-10 ${stat.color}`}>
+                <stat.icon size={16} />
               </div>
-              <p className="text-2xl font-bold">{stat.value}</p>
-              <p className="text-xs text-brand-stone">{stat.label}</p>
+              <p className="text-lg font-bold tablet:text-2xl">{stat.value}</p>
+              <p className="text-[10px] text-brand-stone tablet:text-xs">{stat.label}</p>
             </div>
           ))}
         </div>
@@ -269,9 +293,9 @@ export default function AdminDashboard() {
                 <p className="text-sm text-brand-stone">{products.length} products</p>
                 <button
                   onClick={() => setShowProductForm(true)}
-                  className="flex items-center gap-2 rounded-full bg-brand-black px-4 py-2 text-xs font-medium uppercase tracking-wider text-white"
+                  className="flex items-center gap-1.5 rounded-full bg-brand-black px-3 py-1.5 text-[10px] font-medium uppercase tracking-wider text-white tablet:gap-2 tablet:px-4 tablet:py-2 tablet:text-xs"
                 >
-                  <Plus size={14} /> Add Product
+                  <Plus size={14} /> Add
                 </button>
               </div>
 
@@ -325,7 +349,7 @@ export default function AdminDashboard() {
                 <motion.div
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="mb-6 rounded-xl bg-white p-6 shadow-sm"
+                  className="mb-6 rounded-xl bg-white p-4 shadow-sm tablet:p-6"
                 >
                   <div className="mb-4 flex items-center justify-between">
                     <h3 className="text-sm font-semibold">New Product</h3>
@@ -432,11 +456,11 @@ export default function AdminDashboard() {
                     return (
                     <div
                       key={product.id}
-                      className="rounded-xl bg-white px-6 py-4 shadow-sm"
+                      className="rounded-xl bg-white px-4 py-4 shadow-sm tablet:px-6"
                     >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-4">
-                          <div className="relative h-12 w-12 flex-shrink-0 overflow-hidden rounded-lg bg-brand-ivory">
+                      <div className="flex flex-col gap-3 tablet:flex-row tablet:items-center tablet:justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="relative h-10 w-10 flex-shrink-0 overflow-hidden rounded-lg bg-brand-ivory tablet:h-12 tablet:w-12">
                             {product.images?.[0] && !brokenImages.has(product.images[0].url) ? (
                               <img
                                 src={product.images[0].url}
@@ -450,7 +474,7 @@ export default function AdminDashboard() {
                               </div>
                             )}
                           </div>
-                          <div className="min-w-0">
+                          <div className="min-w-0 flex-1">
                             <input
                               value={draft?.name ?? product.name}
                               onChange={(e) => setProductDrafts((prev) => ({ ...prev, [product.id]: { ...prev[product.id], name: e.target.value } }))}
@@ -459,9 +483,9 @@ export default function AdminDashboard() {
                             <p className="text-xs text-brand-stone">{product.category}</p>
                           </div>
                         </div>
-                        <div className="flex items-center gap-3">
-                          <div className="flex items-center gap-1.5">
-                            <span className="text-xs text-brand-stone">Price:</span>
+                        <div className="flex flex-wrap items-center gap-2 tablet:gap-3">
+                          <div className="flex items-center gap-1">
+                            <span className="hidden text-xs text-brand-stone tablet:inline">Price:</span>
                             <input
                               type="number"
                               value={draft?.price ?? product.price}
@@ -469,29 +493,30 @@ export default function AdminDashboard() {
                               className="w-20 rounded-lg border px-2 py-1 text-xs text-center"
                             />
                           </div>
-                          <div className="flex items-center gap-1.5">
-                            <span className="text-xs text-brand-stone">Stock:</span>
+                          <div className="flex items-center gap-1">
+                            <span className="text-xs text-brand-stone">Stk:</span>
                             <input
                               type="number"
                               value={draft?.stock ?? product.stock}
                               onChange={(e) => setProductDrafts((prev) => ({ ...prev, [product.id]: { ...prev[product.id], stock: parseInt(e.target.value) } }))}
-                              className="w-16 rounded-lg border px-2 py-1 text-xs text-center"
+                              className="w-14 rounded-lg border px-2 py-1 text-xs text-center tablet:w-16"
                             />
                           </div>
                           <label className={`cursor-pointer text-xs ${processing.has(`uploadImage-${product.id}`) ? 'text-brand-stone/50' : 'text-brand-gold hover:underline'}`}>
-                            {processing.has(`uploadImage-${product.id}`) ? 'Uploading...' : 'Add Image'}
+                            {processing.has(`uploadImage-${product.id}`) ? 'Uploading...' : 'Img'}
                             <input
                               type="file"
                               accept="image/*"
                               className="hidden"
                               disabled={processing.has(`uploadImage-${product.id}`)}
-                              onChange={async (e) => {
-                                const file = e.target.files?.[0];
-                                if (!file) return;
-                                e.target.value = '';
-                                const key = `uploadImage-${product.id}`;
-                                await withProcessing(key, async () => {
-                                  const b64 = await toBase64(file);
+                                onChange={async (e) => {
+                                  const file = e.target.files?.[0];
+                                  if (!file) return;
+                                  e.target.value = '';
+                                  const key = `uploadImage-${product.id}`;
+                                  await withProcessing(key, async () => {
+                                    const compressed = await compressImage(file);
+                                    const b64 = await toBase64(compressed);
                                   const uploadRes = await api.post<{ success: boolean; data: { url: string; publicId: string } }>(
                                     '/cloudinary/upload',
                                     { image: b64, folder: 'velora' },
@@ -523,7 +548,7 @@ export default function AdminDashboard() {
                             disabled={processing.has(`delete-${product.id}`)}
                             className="text-xs text-destructive hover:underline disabled:opacity-50"
                           >
-                            {processing.has(`delete-${product.id}`) ? 'Deleting...' : 'Delete'}
+                            {processing.has(`delete-${product.id}`) ? 'Deleting...' : 'Del'}
                           </button>
                         </div>
                       </div>
@@ -570,27 +595,32 @@ export default function AdminDashboard() {
                 <p className="text-sm text-brand-stone">No orders yet</p>
               ) : (
                 orders.map((order) => (
-                  <div key={order.id} className="rounded-xl bg-white p-6 shadow-sm">
-                    <div className="flex items-center justify-between">
+                  <div key={order.id} className="rounded-xl bg-white p-4 shadow-sm tablet:p-6">
+                    <div className="flex flex-col gap-2 tablet:flex-row tablet:items-center tablet:justify-between">
                       <div>
                         <p className="text-xs text-brand-stone">
                           Order #{order.id.slice(0, 8)} — {formatDate(order.createdAt)}
                         </p>
                         <p className="mt-1 text-sm font-medium">{formatCurrency(order.total)}</p>
+                        <p className="mt-0.5 text-xs text-brand-stone tablet:hidden">
+                          {order.items?.length || 0} items
+                        </p>
                       </div>
-                      <select
-                        value={order.status}
-                        onChange={(e) => handleUpdateOrderStatus(order.id, e.target.value)}
-                        className="rounded-lg border px-3 py-1.5 text-xs font-medium capitalize focus:border-brand-gold focus:outline-none"
-                      >
-                        {['pending', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled'].map((s) => (
-                          <option key={s} value={s}>{s}</option>
-                        ))}
-                      </select>
+                      <div className="flex items-center justify-between tablet:gap-4">
+                        <p className="hidden text-xs text-brand-stone tablet:inline">
+                          {order.items?.length || 0} items
+                        </p>
+                        <select
+                          value={order.status}
+                          onChange={(e) => handleUpdateOrderStatus(order.id, e.target.value)}
+                          className="rounded-lg border px-3 py-1.5 text-xs font-medium capitalize focus:border-brand-gold focus:outline-none"
+                        >
+                          {['pending', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled'].map((s) => (
+                            <option key={s} value={s}>{s}</option>
+                          ))}
+                        </select>
+                      </div>
                     </div>
-                      <p className="mt-2 text-xs text-brand-stone">
-                        {order.items?.length || 0} items
-                      </p>
                   </div>
                 ))
               )}
@@ -605,7 +635,7 @@ export default function AdminDashboard() {
                 lowStockProducts.map((product) => (
                   <div
                     key={product.id}
-                    className="flex items-center justify-between rounded-xl bg-white p-6 shadow-sm"
+                    className="flex items-center justify-between rounded-xl bg-white p-4 shadow-sm tablet:p-6"
                   >
                     <div>
                       <p className="text-sm font-medium">{product.name}</p>

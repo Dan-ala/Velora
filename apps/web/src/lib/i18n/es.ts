@@ -142,6 +142,17 @@ export const es = {
     serverError: 'No se pudo conectar con el servidor. Asegúrate de que la API esté funcionando.',
     passwordMinError: 'La contraseña debe tener al menos 8 caracteres',
     registrationFailed: 'Registro fallido',
+    updatePassword: 'Actualizar Contraseña',
+    newPassword: 'Nueva Contraseña',
+    confirmPassword: 'Confirmar Contraseña',
+    updatingPassword: 'Actualizando...',
+    passwordUpdated: 'Contraseña actualizada',
+    passwordUpdateSuccess: 'Tu contraseña ha sido actualizada. Ahora puedes iniciar sesión con tu nueva contraseña.',
+    chooseNewPassword: 'Elige una nueva contraseña para tu cuenta',
+    invalidResetLink: 'Enlace inválido o expirado',
+    resetLinkExpired: 'Este enlace de restablecimiento ya no es válido. Solicita uno nuevo.',
+    requestNewLink: 'Solicitar Nuevo Enlace',
+    passwordsDoNotMatch: 'Las contraseñas no coinciden',
   },
 
   account: {

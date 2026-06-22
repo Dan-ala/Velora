@@ -142,6 +142,17 @@ export const en = {
     serverError: 'Could not connect to the server. Make sure the API is running.',
     passwordMinError: 'Password must be at least 8 characters',
     registrationFailed: 'Registration failed',
+    updatePassword: 'Update Password',
+    newPassword: 'New Password',
+    confirmPassword: 'Confirm Password',
+    updatingPassword: 'Updating...',
+    passwordUpdated: 'Password updated',
+    passwordUpdateSuccess: 'Your password has been updated. You can now sign in with your new password.',
+    chooseNewPassword: 'Choose a new password for your account',
+    invalidResetLink: 'Invalid or expired reset link',
+    resetLinkExpired: 'This password reset link is no longer valid. Please request a new one.',
+    requestNewLink: 'Request New Link',
+    passwordsDoNotMatch: 'Passwords do not match',
   },
 
   account: {

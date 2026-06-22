@@ -47,7 +47,7 @@ export default function HomePage() {
       <CartSidebar />
 
       <main className="min-h-dynamic pb-16 tablet:pb-0">
-        <section className="relative flex items-center justify-center overflow-hidden bg-brand-black" style={{ minHeight: '85vh', minHeight: '85dvh' }}>
+        <section className="relative flex items-center justify-center overflow-hidden bg-brand-black" style={{ minHeight: '85dvh' }}>
           <div className="absolute inset-0 bg-gradient-to-br from-brand-black via-brand-black/95 to-brand-olive/30" />
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(200,169,106,0.08)_0%,_transparent_60%)]" />
 
