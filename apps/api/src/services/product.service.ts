@@ -88,19 +88,22 @@ export const productService = {
   },
 
   async addImage(productId: string, url: string, publicId: string, position?: number) {
-    const maxPos = await prisma.productImage.findFirst({
-      where: { productId },
-      orderBy: { position: 'desc' },
-      select: { position: true },
-    });
+    if (position !== undefined) {
+      await prisma.productImage.updateMany({
+        where: { productId, position: { gte: position } },
+        data: { position: { increment: 1 } },
+      });
+    } else {
+      const maxPos = await prisma.productImage.findFirst({
+        where: { productId },
+        orderBy: { position: 'desc' },
+        select: { position: true },
+      });
+      position = (maxPos?.position ?? -1) + 1;
+    }
 
     return prisma.productImage.create({
-      data: {
-        productId,
-        url,
-        publicId,
-        position: position ?? (maxPos?.position ?? -1) + 1,
-      },
+      data: { productId, url, publicId, position },
     });
   },
 

@@ -438,6 +438,7 @@ export default function AdminDashboard() {
                                   await api.post(`/admin/products/${product.id}/images`, {
                                     url: uploadRes.data.url,
                                     publicId: uploadRes.data.publicId,
+                                    position: 0,
                                   });
                                   loadData();
                                   toast({ title: 'Image added', variant: 'success' });
