@@ -26,19 +26,14 @@ function setCookie(name: string, value: string): void {
 }
 
 function getInitialLocale(): Locale {
-  if (typeof window === 'undefined') return 'es';
+  return 'es';
+}
 
-  const manual = getCookie(MANUAL_COOKIE);
-  if (manual === 'true') {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored === 'en' || stored === 'es') return stored;
-  }
+function detectBrowserLocale(): Locale {
+  if (typeof window === 'undefined') return 'es';
 
   const geo = getCookie(STORAGE_KEY);
   if (geo === 'en' || geo === 'es') return geo;
-
-  const stored = localStorage.getItem(STORAGE_KEY);
-  if (stored === 'en' || stored === 'es') return stored;
 
   const browserLang = navigator.language.split('-')[0];
   if (browserLang === 'en') return 'en';
@@ -51,6 +46,15 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     document.documentElement.lang = locale === 'en' ? 'en' : 'es-CO';
   }, [locale]);
+
+  useEffect(() => {
+    const detected = detectBrowserLocale();
+    if (detected !== locale) {
+      setLocaleState(detected);
+      localStorage.setItem(STORAGE_KEY, detected);
+      setCookie(STORAGE_KEY, detected);
+    }
+  }, []);
 
   const setLocale = (newLocale: Locale) => {
     setLocaleState(newLocale);
