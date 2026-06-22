@@ -24,6 +24,6 @@ services:
       - key: CLOUDINARY_API_SECRET
         sync: false
       - key: FRONTEND_URL
-        value: https://velorastore.cc
+        value: https://velorastore.cc,https://velora.vercel.app
       - key: NODE_ENV
         value: production

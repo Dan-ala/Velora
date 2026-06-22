@@ -26,7 +26,7 @@ async function bootstrap() {
         cb(null, true);
         return;
       }
-      const allowed = [env.FRONTEND_URL];
+      const allowed = env.FRONTEND_URL.split(',').map((s) => s.trim());
       cb(null, allowed.includes(origin));
     },
     credentials: true,
