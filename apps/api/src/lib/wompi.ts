@@ -117,6 +117,9 @@ export async function getFinancialInstitutions() {
     headers: authHeaders(),
   });
   const json = await res.json();
+  if (!res.ok) {
+    throw new Error(JSON.stringify(json.error || json));
+  }
   return json.data || [];
 }
 

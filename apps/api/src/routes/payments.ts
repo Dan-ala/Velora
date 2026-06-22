@@ -135,8 +135,28 @@ export async function paymentRoutes(app: FastifyInstance) {
   });
 
   app.get('/wompi/financial-institutions', async (_request, reply) => {
-    const institutions = await wompi.getFinancialInstitutions();
-    return reply.send({ success: true, data: institutions });
+    try {
+      const institutions = await wompi.getFinancialInstitutions();
+      return reply.send({ success: true, data: institutions });
+    } catch (error: any) {
+      return reply.status(502).send({ success: false, error: error.message });
+    }
+  });
+
+  app.get('/wompi/debug', async (_request, reply) => {
+    const env = getEnv();
+    return reply.send({
+      success: true,
+      data: {
+        hasPublicKey: !!env.WOMPI_PUBLIC_KEY,
+        hasPrivateKey: !!env.WOMPI_PRIVATE_KEY,
+        hasIntegrityKey: !!env.WOMPI_INTEGRITY_KEY,
+        hasEventKey: !!env.WOMPI_EVENT_KEY,
+        isLive: env.WOMPI_LIVE,
+        baseUrl: wompi.baseUrl(),
+        pkPrefix: env.WOMPI_PUBLIC_KEY?.substring(0, 8),
+      },
+    });
   });
 
   app.post('/wompi/create', { preHandler: preHandler() }, async (request, reply) => {
