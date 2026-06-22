@@ -49,7 +49,7 @@ done
 
 echo "[4/4] Starting Web app on port 3000..."
 cd "$ROOT_DIR/apps/web"
-PORT=3000 npx next dev &
+npx next dev --hostname 0.0.0.0 --port 3000 &
 WEB_PID=$!
 cd "$ROOT_DIR"
 
@@ -62,13 +62,17 @@ for i in $(seq 1 30); do
   sleep 2
 done
 
+HOST_IP=$(hostname -I | awk '{print $1}')
+
 echo ""
 echo "============================================"
 echo "  Servers are running!"
 echo "============================================"
 echo ""
-echo "  Web App:    http://localhost:3000 ($(hostname -I | awk '{print $1}'))"
-echo "  API:        http://localhost:4000 ($(hostname -I | awk '{print $1}'))"
+echo "  Web App:    http://localhost:3000"
+echo "  Network:    http://$HOST_IP:3000"
+echo "  API:        http://localhost:4000"
+echo "  Network:    http://$HOST_IP:4000"
 echo "  API Health: http://localhost:4000/health"
 echo ""
 echo "  Press Ctrl+C to stop all servers..."
