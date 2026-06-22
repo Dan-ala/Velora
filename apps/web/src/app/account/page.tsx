@@ -18,7 +18,7 @@ import type { Order } from '@velora/types';
 
 export default function AccountPage() {
   const { locale, t } = useLocale();
-  const { user, setUser } = useAuthStore();
+  const { user, clearSession } = useAuthStore();
   const router = useRouter();
   const [orders, setOrders] = useState<Order[]>([]);
   const supabase = createClient();
@@ -35,7 +35,7 @@ export default function AccountPage() {
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
-    setUser(null);
+    clearSession();
     router.push('/');
   };
 

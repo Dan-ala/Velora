@@ -24,6 +24,7 @@ const CATEGORIES = [
 export default function HomePage() {
   const { locale, t } = useLocale();
   const [featured, setFeatured] = useState<Product[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   const categoryLabels: Record<string, string> = {
     shirts: t('nav.shirts'),
@@ -33,9 +34,11 @@ export default function HomePage() {
   };
 
   useEffect(() => {
+    setIsLoading(true);
     api.get<{ success: boolean; data: Product[] }>('/products/featured')
       .then((res) => setFeatured(res.data))
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => setIsLoading(false));
   }, []);
 
   return (
@@ -131,14 +134,32 @@ export default function HomePage() {
             </Link>
           </div>
 
+          {isLoading ? (
             <div className="grid grid-cols-2 gap-4 tablet:grid-cols-3 desktop:grid-cols-4">
-            {featured.slice(0, 4).map((product) => (
-              <ProductCard key={product.id} product={product} priority />
-            ))}
-            {featured.slice(4).map((product) => (
-              <ProductCard key={product.id} product={product} />
-            ))}
-          </div>
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="animate-pulse">
+                  <div className="aspect-[3/4] rounded-xl bg-brand-ivory" />
+                  <div className="mt-3 space-y-2">
+                    <div className="h-4 w-3/4 rounded bg-brand-ivory" />
+                    <div className="h-4 w-1/3 rounded bg-brand-ivory" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : featured.length === 0 ? (
+            <div className="py-12 text-center">
+              <p className="text-brand-stone">{t('common.noProducts')}</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-4 tablet:grid-cols-3 desktop:grid-cols-4">
+              {featured.slice(0, 4).map((product) => (
+                <ProductCard key={product.id} product={product} priority />
+              ))}
+              {featured.slice(4).map((product) => (
+                <ProductCard key={product.id} product={product} />
+              ))}
+            </div>
+          )}
 
           <div className="mt-8 text-center tablet:hidden">
             <Link
