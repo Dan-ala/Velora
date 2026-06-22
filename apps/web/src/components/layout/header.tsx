@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { ShoppingBag, User, Menu, X, Search } from 'lucide-react';
 import { useCartStore } from '@/stores/cart-store';
 import { useAuthStore } from '@/stores/auth-store';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLocale } from '@/providers/locale-provider';
@@ -18,6 +18,7 @@ const NAV_ITEMS = [
 ];
 
 export function Header() {
+  const [mounted, setMounted] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -26,6 +27,8 @@ export function Header() {
   const openCart = useCartStore((s) => s.openCart);
   const user = useAuthStore((s) => s.user);
   const isAdmin = useAuthStore((s) => s.isAdmin);
+
+  useEffect(() => { setMounted(true); }, []);
 
   return (
     <header className="sticky top-0 z-50 bg-brand-black/95 backdrop-blur-sm text-white">
@@ -66,14 +69,14 @@ export function Header() {
           </button>
 
           <Link
-            href={user ? '/account' : '/auth/login'}
+            href={mounted && user ? '/account' : '/auth/login'}
             className="hidden transition-colors hover:text-brand-gold tablet:block"
             aria-label={t('nav.myAccount')}
           >
             <User size={20} />
           </Link>
 
-          {isAdmin() && (
+          {mounted && isAdmin() && (
             <Link
               href="/admin"
               className="hidden text-xs uppercase tracking-widest text-brand-gold transition-colors hover:text-white tablet:block"
@@ -88,8 +91,8 @@ export function Header() {
             aria-label={t('nav.cart')}
           >
             <ShoppingBag size={20} />
-            <span className={`absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full bg-brand-gold text-[10px] font-bold text-brand-black transition-opacity ${itemCount > 0 ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
-              {itemCount > 99 ? '99+' : itemCount}
+            <span className={`absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full bg-brand-gold text-[10px] font-bold text-brand-black transition-opacity ${mounted && itemCount > 0 ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
+              {mounted ? (itemCount > 99 ? '99+' : itemCount) : 0}
             </span>
           </button>
         </div>
@@ -140,14 +143,14 @@ export function Header() {
               ))}
               <hr className="border-white/10 my-3" />
               <Link
-                href={user ? '/account' : '/auth/login'}
+                href={mounted && user ? '/account' : '/auth/login'}
                 onClick={() => setIsMenuOpen(false)}
                 className="flex items-center gap-3 py-3 text-sm text-brand-stone transition-colors hover:text-white"
               >
                 <User size={18} />
-                {user ? t('nav.myAccount') : t('nav.signIn')}
+                {mounted && user ? t('nav.myAccount') : t('nav.signIn')}
               </Link>
-              {isAdmin() && (
+              {mounted && isAdmin() && (
                 <Link
                   href="/admin"
                   onClick={() => setIsMenuOpen(false)}
