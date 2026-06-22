@@ -2,7 +2,7 @@ import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
 import rateLimit from '@fastify/rate-limit';
-import { getEnv } from './env.js';
+import { getEnv } from './env';
 import { productRoutes } from './routes/products';
 import { authRoutes } from './routes/auth';
 import { cartRoutes } from './routes/cart';
