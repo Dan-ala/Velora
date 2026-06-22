@@ -92,7 +92,7 @@ NODE_ENV=development
 ```
 NEXT_PUBLIC_SUPABASE_URL="https://your-project.supabase.co"
 NEXT_PUBLIC_SUPABASE_ANON_KEY="your-anon-key"
-NEXT_PUBLIC_API_URL="http://localhost:4000"
+NEXT_PUBLIC_API_URL="http://localhost:4000/api"
 NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY="pk_test_..."
 ```
 
