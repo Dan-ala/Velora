@@ -445,6 +445,9 @@ export default function AdminDashboard() {
                                   toast({ title: 'Failed to add image', description: err.message, variant: 'destructive' });
                                 }
                               };
+                              reader.onerror = () => {
+                                toast({ title: 'Failed to read file', variant: 'destructive' });
+                              };
                             }}
                           />
                         </label>

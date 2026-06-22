@@ -8,9 +8,7 @@ async function getAuthHeaders(): Promise<Record<string, string>> {
   const { data } = await supabase.auth.getSession();
   const token = data.session?.access_token || useAuthStore.getState().accessToken;
 
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-  };
+  const headers: Record<string, string> = {};
 
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
@@ -27,7 +25,11 @@ async function request<T>(
 
   const response = await fetch(`${API_URL}${endpoint}`, {
     ...options,
-    headers: { ...headers, ...options.headers },
+    headers: {
+      ...(options.body ? { 'Content-Type': 'application/json' } : {}),
+      ...headers,
+      ...options.headers,
+    },
   });
 
   const data = await response.json();
