@@ -1,9 +1,72 @@
-import type { FastifyInstance } from 'fastify';
+import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { stripe } from '../lib/stripe';
 import { prisma } from '../lib/prisma';
 import { preHandler } from '../middleware/auth';
 import { getEnv } from '../env';
+import { wompi } from '../lib/wompi';
 import z from 'zod';
+
+async function getCart(userId: string) {
+  return prisma.cartItem.findMany({
+    where: { userId },
+    include: { product: true },
+  });
+}
+
+function calcTotal(cart: Awaited<ReturnType<typeof getCart>>) {
+  return cart.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
+}
+
+async function confirmOrder(userId: string, provider: 'stripe' | 'wompi') {
+  const cart = await getCart(userId);
+  if (cart.length === 0) throw new Error('Cart is empty');
+
+  const total = calcTotal(cart);
+
+  const order = await prisma.order.create({
+    data: {
+      userId,
+      total,
+      status: 'confirmed',
+      items: {
+        create: cart.map((item) => ({
+          productId: item.productId,
+          quantity: item.quantity,
+          price: item.product.price,
+        })),
+      },
+      payments: {
+        create: { provider, status: 'completed' },
+      },
+    },
+    include: {
+      items: {
+        include: {
+          product: { include: { images: { orderBy: { position: 'asc' } } } },
+        },
+      },
+      payments: true,
+    },
+  });
+
+  for (const item of cart) {
+    const product = item.product;
+    await prisma.product.update({
+      where: { id: item.productId },
+      data: { stock: product.stock - item.quantity },
+    });
+    await prisma.inventoryEvent.create({
+      data: {
+        productId: item.productId,
+        oldStock: product.stock,
+        newStock: product.stock - item.quantity,
+      },
+    });
+  }
+
+  await prisma.cartItem.deleteMany({ where: { userId } });
+  return order;
+}
 
 export async function paymentRoutes(app: FastifyInstance) {
   app.post('/create-payment-intent', { preHandler: preHandler() }, async (request, reply) => {
@@ -13,16 +76,12 @@ export async function paymentRoutes(app: FastifyInstance) {
       return reply.status(400).send({ success: false, error: 'Stripe not configured' });
     }
 
-    const cart = await prisma.cartItem.findMany({
-      where: { userId: user.id },
-      include: { product: true },
-    });
-
+    const cart = await getCart(user.id);
     if (cart.length === 0) {
       return reply.status(400).send({ success: false, error: 'Cart is empty' });
     }
 
-    const total = cart.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
+    const total = calcTotal(cart);
 
     const paymentIntent = await stripe.paymentIntents.create({
       amount: total,
@@ -54,56 +113,7 @@ export async function paymentRoutes(app: FastifyInstance) {
 
     if (event.type === 'payment_intent.succeeded') {
       const paymentIntent = event.data.object;
-      const userId = paymentIntent.metadata.userId;
-
-      const cart = await prisma.cartItem.findMany({
-        where: { userId },
-        include: { product: true },
-      });
-
-      const total = cart.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
-
-      const order = await prisma.order.create({
-        data: {
-          userId,
-          total,
-          status: 'confirmed',
-          items: {
-            create: cart.map((item) => ({
-              productId: item.productId,
-              quantity: item.quantity,
-              price: item.product.price,
-            })),
-          },
-          payments: {
-            create: {
-              provider: 'stripe',
-              status: 'completed',
-            },
-          },
-        },
-      });
-
-      for (const item of cart) {
-        const product = item.product;
-        const oldStock = product.stock;
-        const newStock = oldStock - item.quantity;
-
-        await prisma.product.update({
-          where: { id: item.productId },
-          data: { stock: newStock },
-        });
-
-        await prisma.inventoryEvent.create({
-          data: {
-            productId: item.productId,
-            oldStock,
-            newStock,
-          },
-        });
-      }
-
-      await prisma.cartItem.deleteMany({ where: { userId } });
+      await confirmOrder(paymentIntent.metadata.userId as string, 'stripe');
     }
 
     return reply.send({ received: true });
@@ -116,22 +126,72 @@ export async function paymentRoutes(app: FastifyInstance) {
       provider: z.enum(['stripe', 'wompi']).default('stripe'),
     }).parse(request.body);
 
-    const cart = await prisma.cartItem.findMany({
-      where: { userId: user.id },
-      include: { product: true },
-    });
+    try {
+      const order = await confirmOrder(user.id, body.provider);
+      return reply.status(201).send({ success: true, data: order });
+    } catch (error: any) {
+      return reply.status(400).send({ success: false, error: error.message });
+    }
+  });
 
+  app.get('/wompi/financial-institutions', async (_request, reply) => {
+    const institutions = await wompi.getFinancialInstitutions();
+    return reply.send({ success: true, data: institutions });
+  });
+
+  app.post('/wompi/create', { preHandler: preHandler() }, async (request, reply) => {
+    const user = (request as any).user;
+    const body = z.object({
+      paymentMethodType: z.enum(['PSE', 'BANCOLOMBIA_TRANSFER', 'NEQUI', 'CARD']),
+      financialInstitutionCode: z.string().optional(),
+      userType: z.number().optional(),
+      userLegalIdType: z.string().optional(),
+      userLegalId: z.string().optional(),
+      fullName: z.string().optional(),
+      phoneNumber: z.string().optional(),
+    }).parse(request.body);
+
+    const env = getEnv();
+    const cart = await getCart(user.id);
     if (cart.length === 0) {
       return reply.status(400).send({ success: false, error: 'Cart is empty' });
     }
 
-    const total = cart.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
+    const total = calcTotal(cart);
+    const amountInCents = total;
+    const reference = wompi.generateReference();
+    const redirectUrl = `${env.FRONTEND_URL.split(',')[0]}/checkout?wompi_reference=${reference}`;
 
-    const order = await prisma.order.create({
+    const paymentMethod: Record<string, unknown> = {};
+    if (body.paymentMethodType === 'PSE') {
+      paymentMethod.type = 'PSE';
+      paymentMethod.user_type = body.userType ?? 0;
+      paymentMethod.user_legal_id_type = body.userLegalIdType ?? 'CC';
+      paymentMethod.user_legal_id = body.userLegalId ?? '';
+      paymentMethod.financial_institution_code = body.financialInstitutionCode ?? '';
+      paymentMethod.payment_description = `VELORA order ${reference}`;
+    }
+
+    const transaction = await wompi.createTransaction({
+      amountInCents,
+      reference,
+      customerEmail: user.email,
+      paymentMethodType: body.paymentMethodType,
+      paymentMethod: Object.keys(paymentMethod).length > 0 ? paymentMethod : undefined,
+      customerData: {
+        fullName: body.fullName,
+        phoneNumber: body.phoneNumber,
+        legalId: body.userLegalId,
+        legalIdType: body.userLegalIdType,
+      },
+      redirectUrl,
+    });
+
+    await prisma.order.create({
       data: {
         userId: user.id,
         total,
-        status: 'confirmed',
+        status: 'pending',
         items: {
           create: cart.map((item) => ({
             productId: item.productId,
@@ -141,31 +201,77 @@ export async function paymentRoutes(app: FastifyInstance) {
         },
         payments: {
           create: {
-            provider: body.provider,
-            status: 'completed',
+            provider: 'wompi',
+            status: 'pending',
           },
         },
-      },
-      include: {
-        items: {
-          include: {
-            product: { include: { images: { orderBy: { position: 'asc' } } } },
-          },
-        },
-        payments: true,
       },
     });
 
-    for (const item of cart) {
-      const product = item.product;
-      await prisma.product.update({
-        where: { id: item.productId },
-        data: { stock: product.stock - item.quantity },
-      });
+    return reply.send({
+      success: true,
+      data: {
+        transactionId: transaction.id,
+        reference,
+        asyncPaymentUrl: transaction.async_payment_url,
+        status: transaction.status,
+      },
+    });
+  });
+
+  app.get('/wompi/transaction/:id', { preHandler: preHandler() }, async (request, reply) => {
+    const { id } = z.object({ id: z.string() }).parse(request.params);
+    const transaction = await wompi.getTransaction(id);
+    return reply.send({ success: true, data: transaction });
+  });
+
+  app.post('/wompi/webhook', async (request: FastifyRequest, reply) => {
+    const env = getEnv();
+    const signature = request.headers['x-event-signature'] as string;
+
+    const rawBody = (request.body as any)?.rawBody || JSON.stringify(request.body);
+
+    if (!wompi.verifyWebhookSignature(rawBody, signature)) {
+      return reply.status(401).send({ success: false, error: 'Invalid signature' });
     }
 
-    await prisma.cartItem.deleteMany({ where: { userId: user.id } });
+    const event = request.body as any;
+    if (event.event === 'transaction.updated' && event.data?.transaction) {
+      const tx = event.data.transaction;
+      const order = await prisma.order.findFirst({
+        where: {
+          payments: {
+            some: { provider: 'wompi', status: 'pending' },
+          },
+        },
+        include: { payments: true, items: true },
+        orderBy: { createdAt: 'desc' },
+      });
 
-    return reply.status(201).send({ success: true, data: order });
+      if (order) {
+        const payment = order.payments[0];
+        if (tx.status === 'APPROVED') {
+          await prisma.payment.update({
+            where: { id: payment.id },
+            data: { status: 'completed' },
+          });
+          await prisma.order.update({
+            where: { id: order.id },
+            data: { status: 'confirmed' },
+          });
+        } else if (['DECLINED', 'ERROR', 'VOIDED'].includes(tx.status)) {
+          await prisma.payment.update({
+            where: { id: payment.id },
+            data: { status: 'failed' },
+          });
+          await prisma.order.update({
+            where: { id: order.id },
+            data: { status: 'cancelled' },
+          });
+        }
+      }
+    }
+
+    return reply.send({ received: true });
   });
 }

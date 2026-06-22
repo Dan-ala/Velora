@@ -25,5 +25,15 @@ services:
         sync: false
       - key: FRONTEND_URL
         value: https://velorastore.cc,https://velora.vercel.app
+      - key: WOMPI_PUBLIC_KEY
+        sync: false
+      - key: WOMPI_PRIVATE_KEY
+        sync: false
+      - key: WOMPI_INTEGRITY_KEY
+        sync: false
+      - key: WOMPI_EVENT_KEY
+        sync: false
+      - key: WOMPI_LIVE
+        value: false
       - key: NODE_ENV
         value: production

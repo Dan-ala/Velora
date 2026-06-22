@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { Suspense, useState, useEffect, useCallback } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Header } from '@/components/layout/header';
 import { Footer } from '@/components/layout/footer';
 import { BottomNav } from '@/components/layout/bottom-nav';
@@ -14,16 +14,57 @@ import { api } from '@/lib/api';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Check, Lock } from 'lucide-react';
+import { Check, Lock, Landmark, Zap, Smartphone, CreditCard, ExternalLink, ChevronDown } from 'lucide-react';
+import { cn } from '@/lib/utils';
+
+interface FinancialInstitution {
+  code: string;
+  name: string;
+}
+
+type PaymentMethod = 'PSE' | 'BANCOLOMBIA_TRANSFER' | 'NEQUI' | 'CARD';
+
+interface PaymentState {
+  step: 'select' | 'form' | 'processing' | 'redirecting' | 'pending' | 'complete' | 'failed';
+  method: PaymentMethod | null;
+  transactionId: string | null;
+  reference: string | null;
+  asyncPaymentUrl: string | null;
+}
 
 export default function CheckoutPage() {
+  return (
+    <Suspense fallback={null}>
+      <CheckoutContent />
+    </Suspense>
+  );
+}
+
+function CheckoutContent() {
   const { locale, t } = useLocale();
   const { items, getTotal, clearCart } = useCartStore();
   const user = useAuthStore((s) => s.user);
   const router = useRouter();
+  const searchParams = useSearchParams();
+
   const [isProcessing, setIsProcessing] = useState(false);
-  const [isComplete, setIsComplete] = useState(false);
   const [error, setError] = useState('');
+  const [payment, setPayment] = useState<PaymentState>({
+    step: 'select',
+    method: null,
+    transactionId: null,
+    reference: null,
+    asyncPaymentUrl: null,
+  });
+  const [institutions, setInstitutions] = useState<FinancialInstitution[]>([]);
+  const [selectedBank, setSelectedBank] = useState('');
+  const [bankOpen, setBankOpen] = useState(false);
+  const [pseForm, setPseForm] = useState({
+    documentType: 'CC',
+    documentNumber: '',
+    fullName: '',
+    phoneNumber: '',
+  });
 
   const total = getTotal();
   const shipping = total >= 200000 ? 0 : 15000;
@@ -35,24 +76,120 @@ export default function CheckoutPage() {
     }
   }, [user, router]);
 
-  const handlePlaceOrder = async () => {
+  const wompiReference = searchParams.get('wompi_reference');
+
+  useEffect(() => {
+    if (wompiReference && payment.step === 'select') {
+      setPayment((prev) => ({ ...prev, step: 'pending', reference: wompiReference }));
+    }
+  }, [wompiReference, payment.step]);
+
+  const fetchInstitutions = useCallback(async () => {
+    try {
+      const res = await api.get<{ success: boolean; data: FinancialInstitution[] }>(
+        '/payments/wompi/financial-institutions',
+      );
+      setInstitutions(res.data || []);
+    } catch {
+      // fallback banks if API fails
+      setInstitutions([
+        { code: '1001', name: 'Bancolombia' },
+        { code: '1002', name: 'Banco de Bogotá' },
+        { code: '1003', name: 'Davivienda' },
+        { code: '1004', name: 'Banco Popular' },
+        { code: '1005', name: 'BBVA Colombia' },
+        { code: '1006', name: 'Banco de Occidente' },
+        { code: '1007', name: 'Nequi' },
+      ]);
+    }
+  }, []);
+
+  const handleSelectMethod = (method: PaymentMethod) => {
+    setPayment((prev) => ({ ...prev, method }));
+    if (method === 'PSE') {
+      setPayment((prev) => ({ ...prev, step: 'form' }));
+      fetchInstitutions();
+    } else {
+      handleCreateTransaction(method);
+    }
+  };
+
+  const handleCreateTransaction = async (method: PaymentMethod, pseData?: typeof pseForm) => {
     setIsProcessing(true);
     setError('');
 
     try {
-      const res = await api.post<{ success: boolean; data: any }>('/orders');
-      if (res.success) {
-        clearCart();
-        setIsComplete(true);
+      const body: Record<string, unknown> = {
+        paymentMethodType: method,
+      };
+
+      if (method === 'PSE' && pseData) {
+        body.financialInstitutionCode = selectedBank;
+        body.userType = 0;
+        body.userLegalIdType = pseData.documentType;
+        body.userLegalId = pseData.documentNumber;
+        body.fullName = pseData.fullName;
+        body.phoneNumber = pseData.phoneNumber;
+      }
+
+      const res = await api.post<{
+        success: boolean;
+        data: {
+          transactionId: string;
+          reference: string;
+          asyncPaymentUrl: string | null;
+          status: string;
+        };
+      }>('/payments/wompi/create', body);
+
+      const { transactionId, reference, asyncPaymentUrl, status } = res.data;
+
+      setPayment((prev) => ({
+        ...prev,
+        transactionId,
+        reference,
+        asyncPaymentUrl,
+        step: asyncPaymentUrl ? 'redirecting' : 'pending',
+      }));
+
+      if (asyncPaymentUrl) {
+        window.location.href = asyncPaymentUrl;
       }
     } catch (err: any) {
-      setError(err.message || 'Failed to place order');
+      setError(err.message || 'Failed to create transaction');
+      setPayment((prev) => ({ ...prev, step: 'failed' }));
     } finally {
       setIsProcessing(false);
     }
   };
 
-  if (isComplete) {
+  const handlePseSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    handleCreateTransaction('PSE', pseForm);
+  };
+
+  const handleConfirmOrder = async () => {
+    setIsProcessing(true);
+    setError('');
+
+    try {
+      const res = await api.post<{ success: boolean; data: any }>('/payments/confirm', {
+        paymentIntentId: payment.transactionId || '',
+        provider: 'wompi',
+      });
+
+      if (res.success) {
+        clearCart();
+        setPayment((prev) => ({ ...prev, step: 'complete' }));
+      }
+    } catch (err: any) {
+      setError(err.message || 'Failed to confirm order');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  if (payment.step === 'complete') {
     return (
       <>
         <Header />
@@ -104,6 +241,13 @@ export default function CheckoutPage() {
     );
   }
 
+  const methods: { id: PaymentMethod; icon: typeof Landmark; label: string; desc: string }[] = [
+    { id: 'PSE', icon: Landmark, label: t('checkout.pse'), desc: t('checkout.pseDesc') },
+    { id: 'BANCOLOMBIA_TRANSFER', icon: Zap, label: t('checkout.breb'), desc: t('checkout.brebDesc') },
+    { id: 'NEQUI', icon: Smartphone, label: t('checkout.nequi'), desc: t('checkout.nequiDesc') },
+    { id: 'CARD', icon: CreditCard, label: t('checkout.card'), desc: t('checkout.cardDesc') },
+  ];
+
   return (
     <>
       <Header />
@@ -122,6 +266,183 @@ export default function CheckoutPage() {
               <div className="rounded-xl bg-white p-6 shadow-sm">
                 <h2 className="text-sm font-semibold uppercase tracking-wider">{t('checkout.contact')}</h2>
                 <p className="mt-1 text-sm text-brand-stone">{user?.email}</p>
+              </div>
+
+              <div className="rounded-xl bg-white p-6 shadow-sm">
+                <h2 className="text-sm font-semibold uppercase tracking-wider">{t('checkout.paymentMethod')}</h2>
+
+                {payment.step === 'select' && (
+                  <div className="mt-4 grid gap-3">
+                    {methods.map((m) => (
+                      <button
+                        key={m.id}
+                        onClick={() => handleSelectMethod(m.id)}
+                        disabled={isProcessing}
+                        className="flex items-center gap-4 rounded-xl border border-brand-ivory p-4 text-left transition-all hover:border-brand-gold hover:bg-brand-ivory/30 disabled:opacity-50"
+                      >
+                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-brand-ivory">
+                          <m.icon size={20} className="text-brand-black" />
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-sm font-medium">{m.label}</p>
+                          <p className="text-xs text-brand-stone">{m.desc}</p>
+                        </div>
+                        <ChevronDown size={16} className="text-brand-stone -rotate-90" />
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {payment.step === 'form' && payment.method === 'PSE' && (
+                  <form onSubmit={handlePseSubmit} className="mt-4 space-y-4">
+                    <div className="relative">
+                      <label className="text-xs font-medium uppercase tracking-wider text-brand-stone">
+                        {t('checkout.selectBank')}
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => setBankOpen(!bankOpen)}
+                        className="mt-1 flex h-11 w-full items-center justify-between rounded-xl border border-brand-ivory px-4 text-sm transition-colors hover:border-brand-gold"
+                      >
+                        <span className={selectedBank ? '' : 'text-brand-stone'}>
+                          {selectedBank
+                            ? institutions.find((i) => i.code === selectedBank)?.name || selectedBank
+                            : t('checkout.selectBank')}
+                        </span>
+                        <ChevronDown size={14} className={cn('transition-transform', bankOpen && 'rotate-180')} />
+                      </button>
+                      {bankOpen && (
+                        <div className="absolute z-10 mt-1 max-h-48 w-full overflow-y-auto rounded-xl border border-brand-ivory bg-white shadow-lg">
+                          {institutions.map((inst) => (
+                            <button
+                              key={inst.code}
+                              type="button"
+                              onClick={() => {
+                                setSelectedBank(inst.code);
+                                setBankOpen(false);
+                              }}
+                              className={cn(
+                                'w-full px-4 py-2.5 text-left text-sm transition-colors hover:bg-brand-ivory',
+                                selectedBank === inst.code && 'bg-brand-ivory font-medium',
+                              )}
+                            >
+                              {inst.name}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    <div>
+                      <label className="text-xs font-medium uppercase tracking-wider text-brand-stone">
+                        {t('checkout.documentType')}
+                      </label>
+                      <select
+                        value={pseForm.documentType}
+                        onChange={(e) => setPseForm((prev) => ({ ...prev, documentType: e.target.value }))}
+                        className="mt-1 h-11 w-full rounded-xl border border-brand-ivory px-4 text-sm"
+                      >
+                        <option value="CC">{t('checkout.cc')}</option>
+                        <option value="CE">{t('checkout.ce')}</option>
+                        <option value="NIT">{t('checkout.nit')}</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="text-xs font-medium uppercase tracking-wider text-brand-stone">
+                        {t('checkout.documentNumber')}
+                      </label>
+                      <input
+                        type="text"
+                        value={pseForm.documentNumber}
+                        onChange={(e) => setPseForm((prev) => ({ ...prev, documentNumber: e.target.value }))}
+                        required
+                        className="mt-1 h-11 w-full rounded-xl border border-brand-ivory px-4 text-sm outline-none transition-colors focus:border-brand-gold"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-xs font-medium uppercase tracking-wider text-brand-stone">
+                        {t('checkout.fullName')}
+                      </label>
+                      <input
+                        type="text"
+                        value={pseForm.fullName}
+                        onChange={(e) => setPseForm((prev) => ({ ...prev, fullName: e.target.value }))}
+                        required
+                        className="mt-1 h-11 w-full rounded-xl border border-brand-ivory px-4 text-sm outline-none transition-colors focus:border-brand-gold"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-xs font-medium uppercase tracking-wider text-brand-stone">
+                        {t('checkout.phoneNumber')}
+                      </label>
+                      <input
+                        type="tel"
+                        value={pseForm.phoneNumber}
+                        onChange={(e) => setPseForm((prev) => ({ ...prev, phoneNumber: e.target.value }))}
+                        required
+                        className="mt-1 h-11 w-full rounded-xl border border-brand-ivory px-4 text-sm outline-none transition-colors focus:border-brand-gold"
+                      />
+                    </div>
+
+                    <div className="flex gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setPayment((prev) => ({ ...prev, step: 'select', method: null }))}
+                        className="flex h-12 flex-1 items-center justify-center rounded-full border border-brand-ivory text-sm font-medium transition-colors hover:bg-brand-ivory"
+                      >
+                        {t('common.backToProducts')}
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={isProcessing || !selectedBank}
+                        className="flex h-12 flex-1 items-center justify-center gap-2 rounded-full bg-brand-black text-sm font-medium uppercase tracking-wider text-white transition-all hover:bg-brand-black/90 disabled:opacity-50"
+                      >
+                        {isProcessing ? t('checkout.processingPayment') : t('checkout.payWithPse')}
+                      </button>
+                    </div>
+                  </form>
+                )}
+
+                {(payment.step === 'redirecting' || payment.step === 'pending') && (
+                  <div className="mt-6 text-center">
+                    <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-brand-ivory">
+                      <ExternalLink size={24} className="text-brand-gold" />
+                    </div>
+                    <p className="mt-4 text-sm font-medium">
+                      {payment.step === 'redirecting'
+                        ? t('checkout.redirectingToWompi')
+                        : t('checkout.paymentPendingDesc')}
+                    </p>
+                    {payment.step === 'pending' && (
+                      <button
+                        onClick={handleConfirmOrder}
+                        disabled={isProcessing}
+                        className="mt-6 flex h-12 w-full items-center justify-center gap-2 rounded-full bg-brand-black text-sm font-medium uppercase tracking-wider text-white transition-all hover:bg-brand-black/90 disabled:opacity-50"
+                      >
+                        {isProcessing ? t('checkout.processingPayment') : t('checkout.placeOrder', { amount: formatCurrency(grandTotal, currencyLocale(locale)) })}
+                      </button>
+                    )}
+                  </div>
+                )}
+
+                {payment.step === 'failed' && (
+                  <div className="mt-6 text-center">
+                    <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-red-100">
+                      <Check size={24} className="text-red-500" />
+                    </div>
+                    <p className="mt-4 text-sm font-medium">{t('checkout.paymentFailed')}</p>
+                    <p className="mt-1 text-xs text-brand-stone">{error || t('checkout.paymentFailedDesc')}</p>
+                    <button
+                      onClick={() => setPayment((prev) => ({ ...prev, step: 'select', method: null }))}
+                      className="mt-6 flex h-12 w-full items-center justify-center gap-2 rounded-full bg-brand-black text-sm font-medium uppercase tracking-wider text-white transition-all hover:bg-brand-black/90"
+                    >
+                      {t('checkout.tryAgain')}
+                    </button>
+                  </div>
+                )}
               </div>
 
               <div className="rounded-xl bg-white p-6 shadow-sm">
@@ -171,22 +492,26 @@ export default function CheckoutPage() {
                   </div>
                 </div>
 
-                {error && (
+                {error && payment.step === 'select' && (
                   <p className="mt-4 rounded-lg bg-destructive/10 p-3 text-xs text-destructive">{error}</p>
                 )}
 
-                <button
-                  onClick={handlePlaceOrder}
-                  disabled={isProcessing}
-                  className="mt-6 flex h-12 w-full items-center justify-center gap-2 rounded-full bg-brand-black text-sm font-medium uppercase tracking-wider text-white transition-all hover:bg-brand-black/90 disabled:opacity-50"
-                >
-                  <Lock size={14} />
-                  {isProcessing ? t('checkout.processing') : t('checkout.placeOrder', { amount: formatCurrency(grandTotal, currencyLocale(locale)) })}
-                </button>
+                {payment.step === 'select' && (
+                  <p className="mt-6 text-center text-[10px] text-brand-stone">
+                    {t('checkout.secureNotice')}
+                  </p>
+                )}
 
-                <p className="mt-4 text-center text-[10px] text-brand-stone">
-                  {t('checkout.secureNotice')}
-                </p>
+                {payment.step === 'pending' && (
+                  <button
+                    onClick={handleConfirmOrder}
+                    disabled={isProcessing}
+                    className="mt-6 flex h-12 w-full items-center justify-center gap-2 rounded-full bg-brand-black text-sm font-medium uppercase tracking-wider text-white transition-all hover:bg-brand-black/90 disabled:opacity-50"
+                  >
+                    <Lock size={14} />
+                    {isProcessing ? t('checkout.processingPayment') : t('checkout.placeOrder', { amount: formatCurrency(grandTotal, currencyLocale(locale)) })}
+                  </button>
+                )}
               </div>
             </div>
           </div>
