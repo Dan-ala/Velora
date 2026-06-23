@@ -192,7 +192,7 @@ export default function ProductDetailPage() {
 
             <div className="flex flex-col justify-center">
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-gold">
-                {product.category}
+                {t('nav.' + product.category)}
               </p>
 
               <motion.h1

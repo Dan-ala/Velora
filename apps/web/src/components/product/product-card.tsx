@@ -106,7 +106,7 @@ export function ProductCard({ product, priority = false }: Props) {
               {formatCurrency(product.price, currencyLocale(locale))}
             </span>
             <span className="text-[10px] uppercase tracking-wider text-brand-stone">
-              {product.category}
+              {t('nav.' + product.category)}
             </span>
           </div>
         </div>

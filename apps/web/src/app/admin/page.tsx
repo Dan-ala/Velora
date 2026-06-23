@@ -479,7 +479,7 @@ export default function AdminDashboard() {
                               onChange={(e) => setProductDrafts((prev) => ({ ...prev, [product.id]: { ...prev[product.id], name: e.target.value } }))}
                               className="w-full rounded border border-transparent px-1 py-0.5 text-sm font-medium hover:border-brand-stone/30 focus:border-brand-gold focus:outline-none"
                             />
-                            <p className="text-xs text-brand-stone">{product.category}</p>
+                            <p className="text-xs text-brand-stone">{t('nav.' + product.category)}</p>
                           </div>
                         </div>
                         <div className="flex flex-wrap items-center gap-2 tablet:gap-3">
@@ -638,7 +638,7 @@ export default function AdminDashboard() {
                   >
                     <div>
                       <p className="text-sm font-medium">{product.name}</p>
-                      <p className="text-xs text-brand-stone">{product.category}</p>
+                      <p className="text-xs text-brand-stone">{t('nav.' + product.category)}</p>
                     </div>
                     <div className="flex items-center gap-3">
                       <span
