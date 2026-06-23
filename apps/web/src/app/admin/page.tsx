@@ -8,10 +8,12 @@ import { formatCurrency, formatDate } from '@/lib/utils';
 import { motion } from 'framer-motion';
 import { Package, ShoppingBag, TrendingUp, AlertTriangle, Plus, X, Upload, Search } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { useLocale } from '@/providers/locale-provider';
 import { CATEGORIES, CATEGORY_LABELS } from '@velora/types';
 import type { Product, Order } from '@velora/types';
 
 export default function AdminDashboard() {
+  const { t } = useLocale();
   const user = useAuthStore((s) => s.user);
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<'products' | 'orders' | 'inventory'>('products');
@@ -339,7 +341,7 @@ export default function AdminDashboard() {
                           : 'bg-white text-brand-stone hover:text-brand-black'
                       }`}
                     >
-                      {CATEGORY_LABELS[cat]}
+                      {t('nav.' + cat)}
                     </button>
                   ))}
                 </div>
@@ -370,12 +372,9 @@ export default function AdminDashboard() {
                       onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                       className="rounded-lg border px-4 py-2.5 text-sm focus:border-brand-gold focus:outline-none"
                     >
-                      <option value="shirts">Shirts</option>
-                      <option value="hoodies">Hoodies</option>
-                      <option value="shoes">Shoes</option>
-                      <option value="pants">Pants</option>
-                      <option value="accessories">Accessories</option>
-                      <option value="outerwear">Outerwear</option>
+                      {CATEGORIES.map((cat) => (
+                        <option key={cat} value={cat}>{CATEGORY_LABELS[cat]}</option>
+                      ))}
                     </select>
                     <textarea
                       placeholder="Description"

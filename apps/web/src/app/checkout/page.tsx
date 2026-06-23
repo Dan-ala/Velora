@@ -14,7 +14,7 @@ import { api } from '@/lib/api';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Check, Lock, Landmark, Zap, Smartphone, CreditCard, ExternalLink, ChevronDown } from 'lucide-react';
+import { Check, Lock, Landmark, Zap, Smartphone, CreditCard, ExternalLink, ChevronDown, ShieldCheck } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface FinancialInstitution {
@@ -250,11 +250,11 @@ function CheckoutContent() {
     );
   }
 
-  const methods: { id: PaymentMethod; icon: typeof Landmark; label: string; desc: string }[] = [
-    { id: 'PSE', icon: Landmark, label: t('checkout.pse'), desc: t('checkout.pseDesc') },
-    { id: 'BANCOLOMBIA_TRANSFER', icon: Zap, label: t('checkout.breb'), desc: t('checkout.brebDesc') },
-    { id: 'NEQUI', icon: Smartphone, label: t('checkout.nequi'), desc: t('checkout.nequiDesc') },
-    { id: 'CARD', icon: CreditCard, label: t('checkout.card'), desc: t('checkout.cardDesc') },
+  const methods: { id: PaymentMethod; icon: typeof Landmark; label: string; desc: string; badge?: string }[] = [
+    { id: 'PSE', icon: Landmark, label: t('checkout.pse'), desc: t('checkout.pseDesc'), badge: 'Débito' },
+    { id: 'BANCOLOMBIA_TRANSFER', icon: Zap, label: 'Bre-B', desc: t('checkout.brebDesc'), badge: '24/7' },
+    { id: 'NEQUI', icon: Smartphone, label: t('checkout.nequi'), desc: t('checkout.nequiDesc'), badge: 'Rápido' },
+    { id: 'CARD', icon: CreditCard, label: t('checkout.card'), desc: t('checkout.cardDesc'), badge: 'Débito/Crédito' },
   ];
 
   return (
@@ -287,18 +287,29 @@ function CheckoutContent() {
                         key={m.id}
                         onClick={() => handleSelectMethod(m.id)}
                         disabled={isProcessing}
-                        className="flex items-center gap-4 rounded-xl border border-brand-ivory p-4 text-left transition-all hover:border-brand-gold hover:bg-brand-ivory/30 disabled:opacity-50"
+                        className="group flex items-center gap-4 rounded-xl border border-brand-ivory p-4 text-left transition-all hover:border-brand-gold hover:bg-brand-ivory/30 hover:shadow-md disabled:opacity-50"
                       >
-                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-brand-ivory">
-                          <m.icon size={20} className="text-brand-black" />
+                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-brand-ivory transition-colors group-hover:bg-brand-gold/10">
+                          <m.icon size={20} className="text-brand-black transition-colors group-hover:text-brand-gold" />
                         </div>
                         <div className="flex-1">
-                          <p className="text-sm font-medium">{m.label}</p>
+                          <div className="flex items-center gap-2">
+                            <p className="text-sm font-medium">{m.label}</p>
+                            {m.badge && (
+                              <span className="rounded-full bg-brand-gold/10 px-2 py-0.5 text-[10px] font-medium text-brand-gold">
+                                {m.badge}
+                              </span>
+                            )}
+                          </div>
                           <p className="text-xs text-brand-stone">{m.desc}</p>
                         </div>
-                        <ChevronDown size={16} className="text-brand-stone -rotate-90" />
+                        <ChevronDown size={16} className="text-brand-stone -rotate-90 transition-transform group-hover:translate-x-0.5" />
                       </button>
                     ))}
+                    <div className="mt-2 flex items-center justify-center gap-2 text-[10px] text-brand-stone">
+                      <ShieldCheck size={12} className="text-brand-gold" />
+                      <span>{t('checkout.wompiProcessing')}</span>
+                    </div>
                   </div>
                 )}
 

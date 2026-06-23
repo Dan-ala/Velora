@@ -14,15 +14,15 @@ export default function SizeGuidePage() {
   const { t } = useLocale();
   return (
     <StaticPage title={t('footer.sizeGuide')}>
-      <p className="text-sm text-brand-stone mb-6">Measurements in centimetres.</p>
+      <p className="text-sm text-brand-stone mb-6">{t('sizeGuide.measurementsNote')}</p>
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-brand-ivory">
-              <th className="py-3 text-left font-medium">Size</th>
-              <th className="py-3 text-left font-medium">Chest</th>
-              <th className="py-3 text-left font-medium">Waist</th>
-              <th className="py-3 text-left font-medium">Length</th>
+              <th className="py-3 text-left font-medium">{t('sizeGuide.size')}</th>
+              <th className="py-3 text-left font-medium">{t('sizeGuide.chest')}</th>
+              <th className="py-3 text-left font-medium">{t('sizeGuide.waist')}</th>
+              <th className="py-3 text-left font-medium">{t('sizeGuide.length')}</th>
             </tr>
           </thead>
           <tbody>

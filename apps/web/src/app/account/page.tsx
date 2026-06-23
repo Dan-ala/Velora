@@ -107,7 +107,7 @@ export default function AccountPage() {
                   disabled={isSigningOut}
                   className="mt-4 flex w-full items-center justify-center gap-2 rounded-full border py-2.5 text-xs font-medium uppercase tracking-wider transition-colors hover:bg-brand-ivory disabled:opacity-50"
                 >
-                  <LogOut size={14} /> {isSigningOut ? t('account.signingOut') || 'Signing out...' : t('account.signOut')}
+                  <LogOut size={14} /> {isSigningOut ? t('account.signingOut') : t('account.signOut')}
                 </button>
               </div>
 

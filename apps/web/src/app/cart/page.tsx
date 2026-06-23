@@ -124,7 +124,7 @@ export default function CartPage() {
                     </div>
                     {total < freeShippingThreshold && (
                       <p className="text-[10px] text-brand-gold">
-                        Add {formatCurrency(freeShippingThreshold - total, currencyLocale(locale))} more for free shipping
+                        {t('cart.freeShippingProgress', { amount: formatCurrency(freeShippingThreshold - total, currencyLocale(locale)) })}
                       </p>
                     )}
                     <hr />

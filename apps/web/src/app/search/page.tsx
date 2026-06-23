@@ -74,7 +74,11 @@ export default function SearchPage() {
             </div>
           ) : results.length > 0 ? (
             <>
-              <p className="mb-6 text-sm text-brand-stone">{results.length} result{results.length !== 1 ? 's' : ''} for &ldquo;{query}&rdquo;</p>
+              <p className="mb-6 text-sm text-brand-stone">
+  {results.length === 1
+    ? t('search.resultFor', { count: results.length, query })
+    : t('search.resultsFor', { count: results.length, query })}
+</p>
               <div className="grid grid-cols-2 gap-4 tablet:grid-cols-3 desktop:grid-cols-4">
                 {results.map((product) => (
                   <ProductCard key={product.id} product={product} />
@@ -82,7 +86,7 @@ export default function SearchPage() {
               </div>
             </>
           ) : query ? (
-            <p className="text-center text-brand-stone">No results for &ldquo;{query}&rdquo;</p>
+            <p className="text-center text-brand-stone">{t('search.noResults', { query })}</p>
           ) : null}
         </div>
       </main>

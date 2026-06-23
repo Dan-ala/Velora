@@ -91,11 +91,11 @@ export function ProductCard({ product, priority = false }: Props) {
               'absolute bottom-3 right-3 flex h-10 w-10 items-center justify-center rounded-full transition-all duration-300',
               product.stock === 0
                 ? 'bg-brand-stone/50 cursor-not-allowed'
-                : 'bg-white shadow-lg hover:bg-brand-gold hover:text-white translate-y-2 opacity-0 group-hover:translate-y-0 group-hover:opacity-100',
+                : 'bg-white shadow-lg hover:bg-brand-gold hover:text-white hover:shadow-xl hover:shadow-brand-gold/20 hover:scale-110 translate-y-2 opacity-0 group-hover:translate-y-0 group-hover:opacity-100',
             )}
             aria-label={t('common.addToCart')}
           >
-            <ShoppingBag size={16} />
+            <ShoppingBag size={16} className="transition-transform duration-300 group-hover:rotate-12" />
           </button>
         </div>
 

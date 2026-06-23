@@ -10,6 +10,7 @@ export const es = {
     inStock: 'En stock',
     onlyLeft: 'Solo quedan {stock}',
     addToCart: 'Agregar al Carrito',
+    adding: 'Agregando...',
     addedToCart: 'Agregado al carrito',
     noProducts: 'No se encontraron productos.',
     noOrders: 'Sin pedidos aún',
@@ -36,7 +37,9 @@ export const es = {
     shirts: 'Camisetas',
     hoodies: 'Buzos',
     shoes: 'Zapatos',
+    pants: 'Pantalones',
     accessories: 'Accesorios',
+    outerwear: 'Abrigos',
     search: 'Buscar',
     searchProducts: 'Buscar productos...',
     myAccount: 'Mi Cuenta',
@@ -89,16 +92,93 @@ export const es = {
     secureCheckout: 'Pago seguro',
   },
 
+  search: {
+    title: 'Buscar',
+    resultsFor: '{count} resultados para "{query}"',
+    resultFor: '1 resultado para "{query}"',
+    noResults: 'Sin resultados para "{query}"',
+  },
+
   cart: {
     title: 'Carrito de Compras',
     items: '{count} artículos',
     empty: 'Tu carrito está vacío',
     emptyDescription: 'Agrega algunos productos para empezar',
+    freeShippingProgress: 'Agrega {amount} más para envío gratis',
     checkout: 'Pagar',
     signInToCheckout: 'Inicia sesión para pagar',
     remove: 'Eliminar artículo',
     decrease: 'Disminuir cantidad',
     increase: 'Aumentar cantidad',
+    close: 'Cerrar carrito',
+  },
+
+  contact: {
+    email: 'Correo Electrónico',
+    location: 'Ubicación',
+    hours: 'Horario',
+    hoursValue: 'Lun–Vie, 9:00 AM – 6:00 PM',
+    emailAddress: 'hello@velorastore.cc',
+    locationValue: 'Medellín, Colombia',
+  },
+
+  faq: {
+    paymentQ: '¿Qué métodos de pago aceptan?',
+    paymentA: 'Aceptamos PSE, Bre-B, Nequi, tarjetas crédito/débito y transferencias Bancolombia.',
+    shippingQ: '¿Cuánto tarda el envío?',
+    shippingA: 'Los pedidos se procesan en 1–3 días hábiles. La entrega toma 3–7 días hábiles según tu ubicación.',
+    returnsQ: '¿Cuál es su política de devoluciones?',
+    returnsA: 'Puedes devolver artículos no usados dentro de 30 días de la entrega para un reembolso completo.',
+    internationalQ: '¿Hacen envíos internacionales?',
+    internationalA: 'Actualmente solo enviamos dentro de Colombia.',
+  },
+
+  about: {
+    description: 'VELORA es una marca de ropa premium nacida de la creencia de que lo que usas debe reflejar quién eres. Cada pieza está diseñada con intención, elaborada con cuidado y hecha para durar.',
+  },
+
+  careers: {
+    noPositions: 'No hay posiciones abiertas en este momento. Síguenos en redes sociales para mantenerte actualizado.',
+  },
+
+  privacy: {
+    p1: 'Tu privacidad es importante para nosotros. Solo recopilamos la información necesaria para procesar tus pedidos y mejorar tu experiencia.',
+    p2: 'No vendemos ni compartimos tus datos personales con terceros, excepto para el procesamiento de pagos (Wompi) y envíos.',
+    p3: 'Al usar esta tienda, aceptas nuestras prácticas de datos descritas aquí.',
+  },
+
+  terms: {
+    p1: 'Todos los precios están en Pesos Colombianos (COP) e incluyen impuestos aplicables.',
+    p2: 'Al realizar un pedido, aceptas pagar el monto total mostrado en el pago.',
+    p3: 'Nos reservamos el derecho de cancelar cualquier pedido por falta de stock o errores de precio.',
+    p4: 'Para preguntas, contacta a hello@velorastore.cc.',
+  },
+
+  shipping: {
+    p1: 'Envío gratis en pedidos mayores a $200,000 COP.',
+    p2: 'Los pedidos se procesan dentro de 1–3 días hábiles después de la confirmación del pago.',
+    p3: 'Tiempos de entrega: 3–7 días hábiles para la mayoría de ubicaciones en Colombia.',
+    p4: 'Recibirás un número de seguimiento una vez que tu pedido sea enviado.',
+  },
+
+  returns: {
+    p1: 'Tienes 30 días desde la entrega para devolver artículos no usados en su condición original.',
+    p2: 'Para iniciar una devolución, contáctanos en hello@velorastore.cc con tu número de pedido.',
+    p3: 'Los reembolsos se procesan dentro de 5–7 días hábiles después de recibir el artículo devuelto.',
+  },
+
+  sizeGuide: {
+    measurementsNote: 'Medidas en centímetros.',
+    size: 'Talla',
+    chest: 'Pecho',
+    waist: 'Cintura',
+    length: 'Largo',
+  },
+
+  products: {
+    all: 'Todas',
+    previousImage: 'Imagen anterior',
+    nextImage: 'Siguiente imagen',
   },
 
   checkout: {
@@ -113,7 +193,8 @@ export const es = {
     confirmationMessage: 'Gracias por tu pedido. Recibirás un correo de confirmación en breve.',
     viewOrders: 'Ver Pedidos',
     empty: 'Tu carrito está vacío',
-    secureNotice: 'Tu pago se procesa de forma segura. No almacenamos datos de tarjetas.',
+    secureNotice: 'Tu pago se procesa de forma segura a través de Wompi, una pasarela de pago certificada. No almacenamos datos de tarjetas.',
+    wompiProcessing: 'Procesado por Wompi — Pasarela de pago 100% segura',
     paymentMethod: 'Método de Pago',
     pse: 'PSE',
     pseDesc: 'Paga desde tu banco con PSE',
@@ -165,6 +246,7 @@ export const es = {
     minChars: 'Mínimo 8 caracteres',
     resetPassword: 'Restablecer Contraseña',
     resetInstructions: 'Te enviaremos un enlace de restablecimiento',
+    sending: 'Enviando...',
     sendResetLink: 'Enviar Enlace',
     checkEmail: 'Revisa tu correo',
     resetSent: 'Enviamos un enlace de restablecimiento a {email}',
@@ -191,6 +273,7 @@ export const es = {
     orders: 'Pedidos',
     orderHistory: 'Historial de Pedidos',
     signOut: 'Cerrar Sesión',
+    signingOut: 'Cerrando sesión...',
     orderId: 'Pedido #{id}',
     noOrders: 'Sin pedidos aún',
     startShopping: 'Empezar a comprar',

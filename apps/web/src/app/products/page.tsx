@@ -8,7 +8,7 @@ import { BottomNav } from '@/components/layout/bottom-nav';
 import { CartSidebar } from '@/components/layout/cart-sidebar';
 import { ProductCard } from '@/components/product/product-card';
 import { api } from '@/lib/api';
-import { CATEGORIES, CATEGORY_LABELS } from '@velora/types';
+import { CATEGORIES } from '@velora/types';
 import { useLocale } from '@/providers/locale-provider';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
@@ -49,9 +49,7 @@ export default function ProductsPage() {
               animate={{ opacity: 1, y: 0 }}
               className="font-display text-3xl font-bold text-white tablet:text-5xl"
             >
-              {activeCategory && CATEGORY_LABELS[activeCategory as keyof typeof CATEGORY_LABELS]
-                ? CATEGORY_LABELS[activeCategory as keyof typeof CATEGORY_LABELS]
-                : t('common.viewAllProducts')}
+              {activeCategory ? t('nav.' + activeCategory) : t('common.viewAllProducts')}
             </motion.h1>
           </div>
         </div>
@@ -67,7 +65,7 @@ export default function ProductsPage() {
                   : 'bg-brand-ivory text-brand-stone hover:bg-brand-black/10'
               }`}
             >
-              All
+              {t('products.all')}
             </Link>
             {CATEGORIES.map((cat) => (
               <Link
@@ -80,7 +78,7 @@ export default function ProductsPage() {
                     : 'bg-brand-ivory text-brand-stone hover:bg-brand-black/10'
                 }`}
               >
-                {CATEGORY_LABELS[cat]}
+                {t('nav.' + cat)}
               </Link>
             ))}
           </div>

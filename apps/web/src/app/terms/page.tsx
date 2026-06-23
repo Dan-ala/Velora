@@ -8,10 +8,10 @@ export default function TermsPage() {
   return (
     <StaticPage title={t('footer.terms')}>
       <div className="space-y-4 text-sm text-brand-stone leading-relaxed">
-        <p>All prices are in Colombian Pesos (COP) and include applicable taxes.</p>
-        <p>By placing an order, you agree to pay the total amount shown at checkout.</p>
-        <p>We reserve the right to cancel any order due to stock unavailability or pricing errors.</p>
-        <p>For questions, contact hello@velorastore.cc.</p>
+        <p>{t('terms.p1')}</p>
+        <p>{t('terms.p2')}</p>
+        <p>{t('terms.p3')}</p>
+        <p>{t('terms.p4')}</p>
       </div>
     </StaticPage>
   );

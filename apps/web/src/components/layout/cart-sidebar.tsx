@@ -48,7 +48,7 @@ export function CartSidebar() {
               <button
                 onClick={closeCart}
                 className="transition-colors hover:text-brand-gold"
-                aria-label="Close cart"
+                aria-label={t('cart.close') || 'Close cart'}
               >
                 <X size={20} />
               </button>

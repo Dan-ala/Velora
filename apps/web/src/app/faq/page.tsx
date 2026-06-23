@@ -3,11 +3,11 @@
 import { useLocale } from '@/providers/locale-provider';
 import { StaticPage } from '@/components/layout/static-page';
 
-const FAQS = [
-  { q: 'What payment methods do you accept?', a: 'We accept PSE, Bre-B, Nequi, credit/debit cards, and Bancolombia transfers.' },
-  { q: 'How long does shipping take?', a: 'Orders are processed within 1–3 business days. Delivery takes 3–7 business days depending on your location.' },
-  { q: 'What is your return policy?', a: 'You can return unworn items within 30 days of delivery for a full refund.' },
-  { q: 'Do you ship internationally?', a: 'Currently we only ship within Colombia.' },
+const FAQ_KEYS = [
+  { q: 'faq.paymentQ', a: 'faq.paymentA' },
+  { q: 'faq.shippingQ', a: 'faq.shippingA' },
+  { q: 'faq.returnsQ', a: 'faq.returnsA' },
+  { q: 'faq.internationalQ', a: 'faq.internationalA' },
 ];
 
 export default function FAQPage() {
@@ -15,10 +15,10 @@ export default function FAQPage() {
   return (
     <StaticPage title={t('footer.faq')}>
       <div className="space-y-6">
-        {FAQS.map((faq, i) => (
+        {FAQ_KEYS.map((faq, i) => (
           <div key={i}>
-            <h3 className="font-medium text-brand-black">{faq.q}</h3>
-            <p className="mt-1 text-sm text-brand-stone leading-relaxed">{faq.a}</p>
+            <h3 className="font-medium text-brand-black">{t(faq.q)}</h3>
+            <p className="mt-1 text-sm text-brand-stone leading-relaxed">{t(faq.a)}</p>
           </div>
         ))}
       </div>

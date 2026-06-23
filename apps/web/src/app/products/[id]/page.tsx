@@ -144,14 +144,14 @@ export default function ProductDetailPage() {
                     <button
                       onClick={() => setCurrentImage((prev) => (prev === 0 ? images.length - 1 : prev - 1))}
                       className="absolute left-3 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/80 shadow-lg backdrop-blur-sm transition-colors hover:bg-white"
-                      aria-label="Previous image"
+                      aria-label={t('products.previousImage')}
                     >
                       <ChevronLeft size={18} />
                     </button>
                     <button
                       onClick={() => setCurrentImage((prev) => (prev === images.length - 1 ? 0 : prev + 1))}
                       className="absolute right-3 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/80 shadow-lg backdrop-blur-sm transition-colors hover:bg-white"
-                      aria-label="Next image"
+                      aria-label={t('products.nextImage')}
                     >
                       <ChevronRight size={18} />
                     </button>
@@ -243,14 +243,24 @@ export default function ProductDetailPage() {
                 </div>
 
                 <div className="flex flex-col gap-3 tablet:flex-row">
-                  <button
+                  <motion.button
                     onClick={handleAddToCart}
                     disabled={isOutOfStock || isAdding}
-                    className="flex h-12 flex-1 items-center justify-center gap-2 rounded-full bg-brand-black text-sm font-medium uppercase tracking-wider text-white transition-all hover:bg-brand-black/90 disabled:cursor-not-allowed disabled:opacity-50"
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    className="group relative flex h-12 flex-1 items-center justify-center gap-2 overflow-hidden rounded-full bg-brand-black text-sm font-medium uppercase tracking-wider text-white transition-all hover:shadow-lg hover:shadow-brand-black/20 disabled:cursor-not-allowed disabled:opacity-50"
                   >
-                    <ShoppingBag size={16} />
-                    {isOutOfStock ? t('common.outOfStock') : isAdding ? t('common.adding') || 'Adding...' : t('common.addToCart')}
-                  </button>
+                    <span className="absolute inset-0 bg-gradient-to-r from-brand-gold/0 via-brand-gold/10 to-brand-gold/0 opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
+                    <motion.span
+                      animate={isAdding ? { rotate: [0, -10, 10, -10, 0] } : {}}
+                      transition={{ duration: 0.4 }}
+                    >
+                      <ShoppingBag size={16} className="relative transition-colors group-hover:text-brand-gold" />
+                    </motion.span>
+                    <span className="relative">
+                      {isOutOfStock ? t('common.outOfStock') : isAdding ? t('common.adding') : t('common.addToCart')}
+                    </span>
+                  </motion.button>
                 </div>
               </div>
 
