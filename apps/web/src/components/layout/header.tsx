@@ -12,9 +12,9 @@ import { LocaleSwitcher } from './locale-switcher';
 
 const NAV_ITEMS = [
   { label: 'nav.newArrivals', href: '/products?sort=newest' },
-  { label: 'nav.shirts', href: '/products?category=shirts' },
-  { label: 'nav.hoodies', href: '/products?category=hoodies' },
-  { label: 'nav.shoes', href: '/products?category=shoes' },
+  { label: 'nav.camisetas', href: '/products?category=camisetas' },
+  { label: 'nav.buzos', href: '/products?category=buzos' },
+  { label: 'nav.zapatos', href: '/products?category=zapatos' },
 ];
 
 export function Header() {

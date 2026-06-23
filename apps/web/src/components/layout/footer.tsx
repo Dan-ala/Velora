@@ -9,9 +9,9 @@ const FOOTER_SECTIONS = [
     titleKey: 'footer.shop',
     links: [
       { labelKey: 'nav.newArrivals', href: '/products?sort=newest' },
-      { labelKey: 'nav.shirts', href: '/products?category=shirts' },
-      { labelKey: 'nav.hoodies', href: '/products?category=hoodies' },
-      { labelKey: 'nav.shoes', href: '/products?category=shoes' },
+      { labelKey: 'nav.camisetas', href: '/products?category=camisetas' },
+      { labelKey: 'nav.buzos', href: '/products?category=buzos' },
+      { labelKey: 'nav.zapatos', href: '/products?category=zapatos' },
     ],
   },
   {
