@@ -14,11 +14,13 @@ import Link from 'next/link';
 import Image from 'next/image';
 import type { Product } from '@velora/types';
 
-const CATEGORIES = [
-  { name: 'Shirts', slug: 'shirts', image: 'https://res.cloudinary.com/dvjfilxjp/image/upload/q_auto,f_auto/v1/velora/category-shirts' },
-  { name: 'Hoodies', slug: 'hoodies', image: 'https://res.cloudinary.com/dvjfilxjp/image/upload/q_auto,f_auto/v1/velora/category-hoodies' },
-  { name: 'Shoes', slug: 'shoes', image: 'https://res.cloudinary.com/dvjfilxjp/image/upload/q_auto,f_auto/v1/velora/category-shoes' },
-  { name: 'Accessories', slug: 'accessories', image: 'https://res.cloudinary.com/dvjfilxjp/image/upload/q_auto,f_auto/v1/velora/category-accessories' },
+const CATEGORIES: { slug: string; image: string }[] = [
+  { slug: 'camisetas', image: 'https://res.cloudinary.com/dvjfilxjp/image/upload/q_auto,f_auto/v1/velora/category-shirts' },
+  { slug: 'buzos', image: 'https://res.cloudinary.com/dvjfilxjp/image/upload/q_auto,f_auto/v1/velora/category-hoodies' },
+  { slug: 'zapatos', image: 'https://res.cloudinary.com/dvjfilxjp/image/upload/q_auto,f_auto/v1/velora/category-shoes' },
+  { slug: 'pantalones', image: 'https://res.cloudinary.com/dvjfilxjp/image/upload/q_auto,f_auto/v1/velora/category-shirts' },
+  { slug: 'abrigos', image: 'https://res.cloudinary.com/dvjfilxjp/image/upload/q_auto,f_auto/v1/velora/category-hoodies' },
+  { slug: 'accesorios', image: 'https://res.cloudinary.com/dvjfilxjp/image/upload/q_auto,f_auto/v1/velora/category-accessories' },
 ];
 
 export default function HomePage() {
@@ -27,10 +29,12 @@ export default function HomePage() {
   const [isLoading, setIsLoading] = useState(true);
 
   const categoryLabels: Record<string, string> = {
-    shirts: t('nav.shirts'),
-    hoodies: t('nav.hoodies'),
-    shoes: t('nav.shoes'),
-    accessories: t('nav.accessories'),
+    camisetas: t('nav.camisetas'),
+    buzos: t('nav.buzos'),
+    zapatos: t('nav.zapatos'),
+    pantalones: t('nav.pantalones'),
+    abrigos: t('nav.abrigos'),
+    accesorios: t('nav.accesorios'),
   };
 
   useEffect(() => {
@@ -193,7 +197,7 @@ export default function HomePage() {
                     src={cat.image}
                     alt={categoryLabels[cat.slug]}
                     fill
-                    priority={cat.slug === 'shirts' || cat.slug === 'hoodies'}
+                    priority={cat.slug === 'camisetas' || cat.slug === 'buzos'}
                     className="object-cover transition-transform duration-700 group-hover:scale-105"
                     sizes="(max-width: 768px) 50vw, 25vw"
                   />

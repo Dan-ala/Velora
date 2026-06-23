@@ -108,22 +108,22 @@ export interface AuthResponse {
   };
 }
 
-export type Category = 'shirts' | 'hoodies' | 'shoes' | 'pants' | 'accessories' | 'outerwear';
+export type Category = 'camisetas' | 'buzos' | 'zapatos' | 'pantalones' | 'abrigos' | 'accesorios';
 
 export const CATEGORIES: Category[] = [
-  'shirts',
-  'hoodies',
-  'shoes',
-  'pants',
-  'accessories',
-  'outerwear',
+  'camisetas',
+  'buzos',
+  'zapatos',
+  'pantalones',
+  'abrigos',
+  'accesorios',
 ];
 
 export const CATEGORY_LABELS: Record<Category, string> = {
-  shirts: 'Shirts',
-  hoodies: 'Hoodies',
-  shoes: 'Shoes',
-  pants: 'Pants',
-  accessories: 'Accessories',
-  outerwear: 'Outerwear',
+  camisetas: 'Camisetas',
+  buzos: 'Buzos y Esqueletos',
+  zapatos: 'Zapatos y Calzado',
+  pantalones: 'Pantalones, Bermudas y Shorts',
+  abrigos: 'Abrigos y Chaquetas',
+  accesorios: 'Accesorios',
 };

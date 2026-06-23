@@ -22,7 +22,7 @@ async function main() {
       description:
         'A modern oversized silhouette crafted from premium cotton. Features a relaxed fit, dropped shoulders, and a subtle VELORA logo embroidered at the hem.',
       price: 89900,
-      category: 'shirts',
+      category: 'camisetas',
       stock: 50,
       images: [
         { url: 'https://res.cloudinary.com/dvjfilxjp/image/upload/q_auto,f_auto/v1/velora/urban-black-shirt-1', publicId: 'velora/urban-black-shirt-1', position: 0 },
@@ -34,7 +34,7 @@ async function main() {
       description:
         'Your everyday essential redefined. This heavyweight French terry hoodie offers warmth without bulk. Ribbed cuffs, kangaroo pocket, clean finish.',
       price: 159900,
-      category: 'hoodies',
+      category: 'buzos',
       stock: 35,
       images: [
         { url: 'https://res.cloudinary.com/dvjfilxjp/image/upload/q_auto,f_auto/v1/velora/beige-hoodie-1', publicId: 'velora/beige-hoodie-1', position: 0 },
@@ -46,7 +46,7 @@ async function main() {
       description:
         'Minimalist leather sneakers built for the modern wardrobe. Clean lines, premium leather upper, cushioned sole for all-day comfort.',
       price: 199900,
-      category: 'shoes',
+      category: 'zapatos',
       stock: 25,
       images: [
         { url: 'https://res.cloudinary.com/dvjfilxjp/image/upload/q_auto,f_auto/v1/velora/white-sneakers-1', publicId: 'velora/white-sneakers-1', position: 0 },

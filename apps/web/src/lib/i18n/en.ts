@@ -34,12 +34,12 @@ export const en = {
 
   nav: {
     newArrivals: 'New Arrivals',
-    shirts: 'Shirts',
-    hoodies: 'Hoodies',
-    shoes: 'Shoes',
-    pants: 'Pants',
-    accessories: 'Accessories',
-    outerwear: 'Outerwear',
+    camisetas: 'Camisetas',
+    buzos: 'Buzos y Esqueletos',
+    zapatos: 'Zapatos y Calzado',
+    pantalones: 'Pantalones, Bermudas y Shorts',
+    abrigos: 'Abrigos y Chaquetas',
+    accesorios: 'Accesorios',
     search: 'Search',
     searchProducts: 'Search products...',
     myAccount: 'My Account',
