@@ -23,7 +23,7 @@ export function generateIntegritySignature(
 ): string {
   const env = getEnv();
   const hash = crypto.createHash('sha256');
-  hash.update(`${amountInCents}${reference}${currency}${env.WOMPI_INTEGRITY_KEY}`);
+  hash.update(`${reference}${amountInCents}${currency}${env.WOMPI_INTEGRITY_KEY}`);
   return hash.digest('hex');
 }
 
@@ -93,7 +93,10 @@ export async function createTransaction(params: CreateTransactionParams) {
   const json = await res.json();
 
   if (!res.ok) {
-    throw new Error(json.error?.message || `Wompi error: ${res.status}`);
+    const detail = json.error?.messages
+      ? Object.entries(json.error.messages).map(([k, v]) => `${k}: ${(v as string[]).join(', ')}`).join('; ')
+      : json.error?.message || JSON.stringify(json.error);
+    throw new Error(`Wompi error (${res.status}): ${detail}`);
   }
 
   return json.data;
