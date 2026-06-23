@@ -65,6 +65,11 @@ export const productService = {
     category: string;
     stock: number;
   }) {
+    const existing = await prisma.product.findUnique({ where: { name: data.name } });
+    if (existing) {
+      throw new Error(`A product with the name "${data.name}" already exists`);
+    }
+
     return prisma.product.create({
       data,
       include: { images: true },
@@ -75,6 +80,13 @@ export const productService = {
     id: string,
     data: { name?: string; description?: string; price?: number; category?: string; stock?: number },
   ) {
+    if (data.name) {
+      const existing = await prisma.product.findUnique({ where: { name: data.name } });
+      if (existing && existing.id !== id) {
+        throw new Error(`A product with the name "${data.name}" already exists`);
+      }
+    }
+
     return prisma.product.update({
       where: { id },
       data,

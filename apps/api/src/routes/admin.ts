@@ -28,8 +28,15 @@ export async function adminRoutes(app: FastifyInstance) {
       stock: z.number().int().min(0).default(0),
     }).parse(request.body);
 
-    const product = await productService.create(body);
-    return reply.status(201).send({ success: true, data: product });
+    try {
+      const product = await productService.create(body);
+      return reply.status(201).send({ success: true, data: product });
+    } catch (err: any) {
+      if (err.message?.startsWith('A product with the name')) {
+        return reply.status(409).send({ success: false, error: err.message });
+      }
+      throw err;
+    }
   });
 
   app.put('/products/:id', async (request, reply) => {
@@ -42,8 +49,15 @@ export async function adminRoutes(app: FastifyInstance) {
       stock: z.number().int().min(0).optional(),
     }).parse(request.body);
 
-    const product = await productService.update(id, body);
-    return reply.send({ success: true, data: product });
+    try {
+      const product = await productService.update(id, body);
+      return reply.send({ success: true, data: product });
+    } catch (err: any) {
+      if (err.message?.startsWith('A product with the name')) {
+        return reply.status(409).send({ success: false, error: err.message });
+      }
+      throw err;
+    }
   });
 
   app.delete('/products/:id', async (request, reply) => {
