@@ -26,10 +26,21 @@ async function main() {
   const raw = readFileSync(filePath, 'utf-8');
   const products: ProductInput[] = JSON.parse(raw);
 
+  const existingRes = await fetch(`${API_URL}/admin/products?limit=200`, { headers });
+  const existingJson = await existingRes.json() as any;
+  const existingNames = new Set<string>((existingJson.data || []).map((p: any) => p.name));
+
   let created = 0;
+  let skipped = 0;
   let errors = 0;
 
   for (const product of products) {
+    if (existingNames.has(product.name)) {
+      console.log(`SKIPPED "${product.name}" (already exists)`);
+      skipped++;
+      continue;
+    }
+
     try {
       const res = await fetch(`${API_URL}/admin/products`, {
         method: 'POST',
@@ -53,7 +64,7 @@ async function main() {
     }
   }
 
-  console.log(`\nDone. ${created} created, ${errors} failed.`);
+  console.log(`\nDone. ${created} created, ${skipped} skipped, ${errors} failed.`);
 }
 
 main().catch(console.error);
