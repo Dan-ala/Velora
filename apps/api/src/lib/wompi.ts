@@ -2,7 +2,7 @@ import crypto from 'crypto';
 import { getEnv } from '../env';
 
 const BASE_URL = 'https://sandbox.wompi.co/v1';
-const LIVE_URL = 'https://api.wompi.co/v1';
+const LIVE_URL = 'https://production.wompi.co/v1';
 
 function baseUrl() {
   return getEnv().WOMPI_LIVE ? LIVE_URL : BASE_URL;

@@ -11,6 +11,7 @@ import { paymentRoutes } from './routes/payments';
 import { adminRoutes } from './routes/admin';
 import { inventoryRoutes } from './routes/inventory';
 import { cloudinaryRoutes } from './routes/cloudinary';
+import { wompiRoutes } from './routes/wompi';
 
 async function bootstrap() {
   const env = getEnv();
@@ -46,6 +47,7 @@ async function bootstrap() {
   await app.register(adminRoutes, { prefix: '/api/admin' });
   await app.register(inventoryRoutes, { prefix: '/api/inventory' });
   await app.register(cloudinaryRoutes, { prefix: '/api/cloudinary' });
+  await app.register(wompiRoutes, { prefix: '/api/wompi' });
 
   try {
     await app.listen({ port: env.PORT, host: '0.0.0.0' });
