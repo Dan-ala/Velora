@@ -34,6 +34,6 @@ services:
       - key: WOMPI_EVENT_KEY
         sync: false
       - key: WOMPI_LIVE
-        value: false
+        value: true
       - key: NODE_ENV
         value: production

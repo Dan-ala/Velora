@@ -78,11 +78,38 @@ function CheckoutContent() {
 
   const wompiReference = searchParams.get('wompi_reference');
 
+  const checkTransactionStatus = useCallback(async (id: string) => {
+    setIsProcessing(true);
+    setError('');
+
+    try {
+      const res = await api.post<{ success: boolean; data: any }>('/payments/confirm', {
+        paymentIntentId: id,
+        provider: 'wompi',
+      });
+
+      if (res.success) {
+        clearCart();
+        setPayment((prev) => ({ ...prev, step: 'complete' }));
+      }
+    } catch (err: any) {
+      setError(err.message || 'Transaction not completed');
+      setPayment((prev) => ({ ...prev, step: 'failed' }));
+    } finally {
+      setIsProcessing(false);
+    }
+  }, [clearCart]);
+
   useEffect(() => {
     if (wompiReference && payment.step === 'select') {
-      setPayment((prev) => ({ ...prev, step: 'pending', reference: wompiReference }));
+      setPayment((prev) => ({
+        ...prev,
+        step: 'pending',
+        reference: wompiReference,
+      }));
+      checkTransactionStatus(wompiReference);
     }
-  }, [wompiReference, payment.step]);
+  }, [wompiReference, payment.step, checkTransactionStatus]);
 
   const fetchInstitutions = useCallback(async () => {
     try {
@@ -178,24 +205,8 @@ function CheckoutContent() {
   };
 
   const handleConfirmOrder = async () => {
-    setIsProcessing(true);
-    setError('');
-
-    try {
-      const res = await api.post<{ success: boolean; data: any }>('/payments/confirm', {
-        paymentIntentId: payment.transactionId || '',
-        provider: 'wompi',
-      });
-
-      if (res.success) {
-        clearCart();
-        setPayment((prev) => ({ ...prev, step: 'complete' }));
-      }
-    } catch (err: any) {
-      setError(err.message || 'Failed to confirm order');
-    } finally {
-      setIsProcessing(false);
-    }
+    if (!payment.transactionId) return;
+    await checkTransactionStatus(payment.transactionId);
   };
 
   if (payment.step === 'complete') {

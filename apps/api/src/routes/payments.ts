@@ -127,6 +127,43 @@ export async function paymentRoutes(app: FastifyInstance) {
     }).parse(request.body);
 
     try {
+      if (body.provider === 'wompi') {
+        const payment = await prisma.payment.findFirst({
+          where: {
+            OR: [
+              { transactionId: body.paymentIntentId },
+              { reference: body.paymentIntentId },
+            ],
+            provider: 'wompi',
+          },
+          include: { order: true },
+        });
+
+        if (!payment || !payment.transactionId) {
+          return reply.status(404).send({ success: false, error: 'Payment not found' });
+        }
+
+        const transaction = await wompi.getTransaction(payment.transactionId);
+
+        if (transaction.status === 'APPROVED') {
+          await prisma.payment.update({
+            where: { id: payment.id },
+            data: { status: 'completed' },
+          });
+          const order = await prisma.order.update({
+            where: { id: payment.orderId },
+            data: { status: 'confirmed' },
+          });
+          await prisma.cartItem.deleteMany({ where: { userId: user.id } });
+          return reply.send({ success: true, data: order });
+        }
+
+        return reply.status(400).send({
+          success: false,
+          error: `Transaction status: ${transaction.status}`,
+        });
+      }
+
       const order = await confirmOrder(user.id, body.provider);
       return reply.status(201).send({ success: true, data: order });
     } catch (error: any) {
@@ -160,83 +197,90 @@ export async function paymentRoutes(app: FastifyInstance) {
   });
 
   app.post('/wompi/create', { preHandler: preHandler() }, async (request, reply) => {
-    const user = (request as any).user;
-    const body = z.object({
-      paymentMethodType: z.enum(['PSE', 'BANCOLOMBIA_TRANSFER', 'NEQUI', 'CARD']),
-      financialInstitutionCode: z.string().optional(),
-      userType: z.number().optional(),
-      userLegalIdType: z.string().optional(),
-      userLegalId: z.string().optional(),
-      fullName: z.string().optional(),
-      phoneNumber: z.string().optional(),
-    }).parse(request.body);
+    try {
+      const user = (request as any).user;
+      const body = z.object({
+        paymentMethodType: z.enum(['PSE', 'BANCOLOMBIA_TRANSFER', 'NEQUI', 'CARD']),
+        financialInstitutionCode: z.string().optional(),
+        userType: z.number().optional(),
+        userLegalIdType: z.string().optional(),
+        userLegalId: z.string().optional(),
+        fullName: z.string().optional(),
+        phoneNumber: z.string().optional(),
+      }).parse(request.body);
 
-    const env = getEnv();
-    const cart = await getCart(user.id);
-    if (cart.length === 0) {
-      return reply.status(400).send({ success: false, error: 'Cart is empty' });
-    }
+      const env = getEnv();
+      const cart = await getCart(user.id);
+      if (cart.length === 0) {
+        return reply.status(400).send({ success: false, error: 'Cart is empty' });
+      }
 
-    const total = calcTotal(cart);
-    const amountInCents = total;
-    const reference = wompi.generateReference();
-    const redirectUrl = `${env.FRONTEND_URL.split(',')[0]}/checkout?wompi_reference=${reference}`;
+      const total = calcTotal(cart);
+      const amountInCents = total;
+      const reference = wompi.generateReference();
 
-    const paymentMethod: Record<string, unknown> = {};
-    if (body.paymentMethodType === 'PSE') {
-      paymentMethod.type = 'PSE';
-      paymentMethod.user_type = body.userType ?? 0;
-      paymentMethod.user_legal_id_type = body.userLegalIdType ?? 'CC';
-      paymentMethod.user_legal_id = body.userLegalId ?? '';
-      paymentMethod.financial_institution_code = body.financialInstitutionCode ?? '';
-      paymentMethod.payment_description = `VELORA order ${reference}`;
-    }
+      const paymentMethod: Record<string, unknown> = {};
+      if (body.paymentMethodType === 'PSE') {
+        paymentMethod.type = 'PSE';
+        paymentMethod.user_type = body.userType ?? 0;
+        paymentMethod.user_legal_id_type = body.userLegalIdType ?? 'CC';
+        paymentMethod.user_legal_id = body.userLegalId ?? '';
+        paymentMethod.financial_institution_code = body.financialInstitutionCode ?? '';
+        paymentMethod.payment_description = `VELORA order ${reference}`;
+      }
 
-    const transaction = await wompi.createTransaction({
-      amountInCents,
-      reference,
-      customerEmail: user.email,
-      paymentMethodType: body.paymentMethodType,
-      paymentMethod: Object.keys(paymentMethod).length > 0 ? paymentMethod : undefined,
-      customerData: {
-        fullName: body.fullName,
-        phoneNumber: body.phoneNumber,
-        legalId: body.userLegalId,
-        legalIdType: body.userLegalIdType,
-      },
-      redirectUrl,
-    });
+      const redirectUrl = `${env.FRONTEND_URL.split(',')[0]}/checkout?wompi_reference=${reference}`;
 
-    await prisma.order.create({
-      data: {
-        userId: user.id,
-        total,
-        status: 'pending',
-        items: {
-          create: cart.map((item) => ({
-            productId: item.productId,
-            quantity: item.quantity,
-            price: item.product.price,
-          })),
+      const transaction = await wompi.createTransaction({
+        amountInCents,
+        reference,
+        customerEmail: user.email,
+        paymentMethodType: body.paymentMethodType,
+        paymentMethod: Object.keys(paymentMethod).length > 0 ? paymentMethod : undefined,
+        customerData: {
+          fullName: body.fullName,
+          phoneNumber: body.phoneNumber,
+          legalId: body.userLegalId,
+          legalIdType: body.userLegalIdType,
         },
-        payments: {
-          create: {
-            provider: 'wompi',
-            status: 'pending',
+        redirectUrl,
+      });
+
+      await prisma.order.create({
+        data: {
+          userId: user.id,
+          total,
+          status: 'pending',
+          items: {
+            create: cart.map((item) => ({
+              productId: item.productId,
+              quantity: item.quantity,
+              price: item.product.price,
+            })),
+          },
+          payments: {
+            create: {
+              provider: 'wompi',
+              status: 'pending',
+              transactionId: transaction.id,
+              reference,
+            },
           },
         },
-      },
-    });
+      });
 
-    return reply.send({
-      success: true,
-      data: {
-        transactionId: transaction.id,
-        reference,
-        asyncPaymentUrl: transaction.async_payment_url,
-        status: transaction.status,
-      },
-    });
+      return reply.send({
+        success: true,
+        data: {
+          transactionId: transaction.id,
+          reference,
+          asyncPaymentUrl: transaction.async_payment_url,
+          status: transaction.status,
+        },
+      });
+    } catch (error: any) {
+      return reply.status(400).send({ success: false, error: error.message });
+    }
   });
 
   app.get('/wompi/transaction/:id', { preHandler: preHandler() }, async (request, reply) => {
@@ -258,25 +302,18 @@ export async function paymentRoutes(app: FastifyInstance) {
     const event = request.body as any;
     if (event.event === 'transaction.updated' && event.data?.transaction) {
       const tx = event.data.transaction;
-      const order = await prisma.order.findFirst({
-        where: {
-          payments: {
-            some: { provider: 'wompi', status: 'pending' },
-          },
-        },
-        include: { payments: true, items: true },
-        orderBy: { createdAt: 'desc' },
+      const payment = await prisma.payment.findFirst({
+        where: { transactionId: tx.id, provider: 'wompi' },
       });
 
-      if (order) {
-        const payment = order.payments[0];
+      if (payment) {
         if (tx.status === 'APPROVED') {
           await prisma.payment.update({
             where: { id: payment.id },
             data: { status: 'completed' },
           });
           await prisma.order.update({
-            where: { id: order.id },
+            where: { id: payment.orderId },
             data: { status: 'confirmed' },
           });
         } else if (['DECLINED', 'ERROR', 'VOIDED'].includes(tx.status)) {
@@ -285,7 +322,7 @@ export async function paymentRoutes(app: FastifyInstance) {
             data: { status: 'failed' },
           });
           await prisma.order.update({
-            where: { id: order.id },
+            where: { id: payment.orderId },
             data: { status: 'cancelled' },
           });
         }

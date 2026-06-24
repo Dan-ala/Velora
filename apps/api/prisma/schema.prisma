@@ -112,14 +112,17 @@ model OrderItem {
 }
 
 model Payment {
-  id        String          @id @default(cuid())
-  orderId   String
-  provider  PaymentProvider
-  status    PaymentStatus   @default(pending)
+  id            String          @id @default(cuid())
+  orderId       String
+  provider      PaymentProvider
+  status        PaymentStatus   @default(pending)
+  transactionId String?
+  reference     String?
 
   order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
   @@index([orderId])
+  @@index([reference])
 }
 
 model InventoryEvent {
