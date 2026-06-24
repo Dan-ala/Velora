@@ -136,6 +136,8 @@ function CheckoutContent() {
     if (method === 'PSE') {
       setPayment((prev) => ({ ...prev, step: 'form' }));
       fetchInstitutions();
+    } else if (method === 'NEQUI' || method === 'BANCOLOMBIA_TRANSFER') {
+      setPayment((prev) => ({ ...prev, step: 'form' }));
     } else {
       handleCreateTransaction(method);
     }
@@ -159,13 +161,15 @@ function CheckoutContent() {
         paymentMethodType: method,
       };
 
-      if (method === 'PSE' && pseData) {
-        body.financialInstitutionCode = selectedBank;
+      if (pseData) {
         body.userType = 0;
         body.userLegalIdType = pseData.documentType;
         body.userLegalId = pseData.documentNumber;
         body.fullName = pseData.fullName;
         body.phoneNumber = pseData.phoneNumber;
+        if (method === 'PSE') {
+          body.financialInstitutionCode = selectedBank;
+        }
       }
 
       const res = await api.post<{
@@ -199,9 +203,11 @@ function CheckoutContent() {
     }
   };
 
-  const handlePseSubmit = (e: React.FormEvent) => {
+  const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    handleCreateTransaction('PSE', pseForm);
+    if (payment.method) {
+      handleCreateTransaction(payment.method, pseForm);
+    }
   };
 
   const handleConfirmOrder = async () => {
@@ -324,45 +330,47 @@ function CheckoutContent() {
                   </div>
                 )}
 
-                {payment.step === 'form' && payment.method === 'PSE' && (
-                  <form onSubmit={handlePseSubmit} className="mt-4 space-y-4">
-                    <div className="relative">
-                      <label className="text-xs font-medium uppercase tracking-wider text-brand-stone">
-                        {t('checkout.selectBank')}
-                      </label>
-                      <button
-                        type="button"
-                        onClick={() => setBankOpen(!bankOpen)}
-                        className="mt-1 flex h-11 w-full items-center justify-between rounded-xl border border-brand-ivory px-4 text-sm text-brand-black transition-colors hover:border-brand-gold"
-                      >
-                        <span className={selectedBank ? 'text-brand-black' : 'text-brand-stone'}>
-                          {selectedBank
-                            ? institutions.find((i) => i.code === selectedBank)?.name || selectedBank
-                            : t('checkout.selectBank')}
-                        </span>
-                        <ChevronDown size={14} className={cn('transition-transform', bankOpen && 'rotate-180')} />
-                      </button>
+                {payment.step === 'form' && payment.method && payment.method !== 'CARD' && (
+                  <form onSubmit={handleFormSubmit} className="mt-4 space-y-4">
+                    {payment.method === 'PSE' && (
+                      <div className="relative">
+                        <label className="text-xs font-medium uppercase tracking-wider text-brand-stone">
+                          {t('checkout.selectBank')}
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => setBankOpen(!bankOpen)}
+                          className="mt-1 flex h-11 w-full items-center justify-between rounded-xl border border-brand-ivory px-4 text-sm text-brand-black transition-colors hover:border-brand-gold"
+                        >
+                          <span className={selectedBank ? 'text-brand-black' : 'text-brand-stone'}>
+                            {selectedBank
+                              ? institutions.find((i) => i.code === selectedBank)?.name || selectedBank
+                              : t('checkout.selectBank')}
+                          </span>
+                          <ChevronDown size={14} className={cn('transition-transform', bankOpen && 'rotate-180')} />
+                        </button>
                         {bankOpen && (
-                        <div className="absolute z-10 mt-1 max-h-48 w-full overflow-y-auto rounded-xl border border-brand-ivory bg-white shadow-lg">
-                          {institutions.map((inst) => (
-                            <button
-                              key={inst.code}
-                              type="button"
-                              onClick={() => {
-                                setSelectedBank(inst.code);
-                                setBankOpen(false);
-                              }}
-                              className={cn(
-                                'w-full px-4 py-2.5 text-left text-sm text-brand-black transition-colors hover:bg-brand-ivory',
-                                selectedBank === inst.code && 'bg-brand-ivory font-medium',
-                              )}
-                            >
-                              {inst.name}
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
+                          <div className="absolute z-10 mt-1 max-h-48 w-full overflow-y-auto rounded-xl border border-brand-ivory bg-white shadow-lg">
+                            {institutions.map((inst) => (
+                              <button
+                                key={inst.code}
+                                type="button"
+                                onClick={() => {
+                                  setSelectedBank(inst.code);
+                                  setBankOpen(false);
+                                }}
+                                className={cn(
+                                  'w-full px-4 py-2.5 text-left text-sm text-brand-black transition-colors hover:bg-brand-ivory',
+                                  selectedBank === inst.code && 'bg-brand-ivory font-medium',
+                                )}
+                              >
+                                {inst.name}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
 
                     <div>
                       <label className="text-xs font-medium uppercase tracking-wider text-brand-stone">
@@ -413,7 +421,7 @@ function CheckoutContent() {
                         type="tel"
                         value={pseForm.phoneNumber}
                         onChange={(e) => setPseForm((prev) => ({ ...prev, phoneNumber: e.target.value }))}
-                        required
+                        required={payment.method === 'NEQUI'}
                         className="mt-1 h-11 w-full rounded-xl border border-brand-ivory px-4 text-sm outline-none transition-colors focus:border-brand-gold"
                       />
                     </div>
@@ -428,10 +436,18 @@ function CheckoutContent() {
                       </button>
                       <button
                         type="submit"
-                        disabled={isProcessing || !selectedBank}
+                        disabled={isProcessing || (payment.method === 'PSE' && !selectedBank)}
                         className="flex h-12 flex-1 items-center justify-center gap-2 rounded-full bg-brand-black text-sm font-medium uppercase tracking-wider text-white transition-all hover:bg-brand-black/90 disabled:opacity-50"
                       >
-                        {isProcessing ? t('checkout.processingPayment') : t('checkout.payWithPse')}
+                        {isProcessing
+                          ? t('checkout.processingPayment')
+                          : payment.method === 'PSE'
+                            ? t('checkout.payWithPse')
+                            : payment.method === 'NEQUI'
+                              ? t('checkout.payWithNequi')
+                              : payment.method === 'BANCOLOMBIA_TRANSFER'
+                                ? t('checkout.payWithBreb')
+                                : t('checkout.payWithCard')}
                       </button>
                     </div>
                   </form>

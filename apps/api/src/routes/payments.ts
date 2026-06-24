@@ -219,15 +219,27 @@ export async function paymentRoutes(app: FastifyInstance) {
       const amountInCents = total;
       const reference = wompi.generateReference();
 
-      const paymentMethod: Record<string, unknown> = {
-        type: body.paymentMethodType,
-      };
+      const paymentMethod: Record<string, unknown> | undefined =
+        body.paymentMethodType === 'CARD'
+          ? undefined
+          : { type: body.paymentMethodType };
       if (body.paymentMethodType === 'PSE') {
-        paymentMethod.user_type = body.userType ?? 0;
-        paymentMethod.user_legal_id_type = body.userLegalIdType ?? 'CC';
-        paymentMethod.user_legal_id = body.userLegalId ?? '';
-        paymentMethod.financial_institution_code = body.financialInstitutionCode ?? '';
-        paymentMethod.payment_description = `VELORA order ${reference}`;
+        paymentMethod!.user_type = body.userType ?? 0;
+        paymentMethod!.user_legal_id_type = body.userLegalIdType ?? 'CC';
+        paymentMethod!.user_legal_id = body.userLegalId ?? '';
+        paymentMethod!.financial_institution_code = body.financialInstitutionCode ?? '';
+        paymentMethod!.payment_description = `VELORA order ${reference}`;
+      } else if (body.paymentMethodType === 'NEQUI') {
+        paymentMethod!.phone_number = body.phoneNumber;
+        paymentMethod!.user_type = body.userType ?? 0;
+        paymentMethod!.user_legal_id_type = body.userLegalIdType ?? 'CC';
+        paymentMethod!.user_legal_id = body.userLegalId ?? '';
+      } else if (body.paymentMethodType === 'BANCOLOMBIA_TRANSFER') {
+        paymentMethod!.user_type = 'PERSON';
+        paymentMethod!.user_legal_id_type = body.userLegalIdType ?? 'CC';
+        paymentMethod!.user_legal_id = body.userLegalId ?? '';
+        paymentMethod!.financial_institution_code = '1001';
+        paymentMethod!.payment_description = `VELORA order ${reference}`;
       }
 
       const redirectUrl = `${env.FRONTEND_URL.split(',')[0]}/checkout?wompi_reference=${reference}`;
