@@ -219,9 +219,10 @@ export async function paymentRoutes(app: FastifyInstance) {
       const amountInCents = total;
       const reference = wompi.generateReference();
 
-      const paymentMethod: Record<string, unknown> = {};
+      const paymentMethod: Record<string, unknown> = {
+        type: body.paymentMethodType,
+      };
       if (body.paymentMethodType === 'PSE') {
-        paymentMethod.type = 'PSE';
         paymentMethod.user_type = body.userType ?? 0;
         paymentMethod.user_legal_id_type = body.userLegalIdType ?? 'CC';
         paymentMethod.user_legal_id = body.userLegalId ?? '';
@@ -245,7 +246,7 @@ export async function paymentRoutes(app: FastifyInstance) {
         reference,
         customerEmail: user.email,
         paymentMethodType: body.paymentMethodType,
-        paymentMethod: Object.keys(paymentMethod).length > 0 ? paymentMethod : undefined,
+        paymentMethod,
         customerData,
         redirectUrl,
       });
