@@ -94,7 +94,7 @@ export async function createTransaction(params: CreateTransactionParams) {
 
   if (!res.ok) {
     const detail = json.error?.messages
-      ? Object.entries(json.error.messages).map(([k, v]) => `${k}: ${(v as string[]).join(', ')}`).join('; ')
+      ? Object.entries(json.error.messages).map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join(', ') : v}`).join('; ')
       : json.error?.message || JSON.stringify(json.error);
     throw new Error(`Wompi error (${res.status}): ${detail}`);
   }
