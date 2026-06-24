@@ -231,18 +231,22 @@ export async function paymentRoutes(app: FastifyInstance) {
 
       const redirectUrl = `${env.FRONTEND_URL.split(',')[0]}/checkout?wompi_reference=${reference}`;
 
+      const customerData = body.fullName
+        ? {
+            fullName: body.fullName,
+            phoneNumber: body.phoneNumber,
+            legalId: body.userLegalId,
+            legalIdType: body.userLegalIdType,
+          }
+        : undefined;
+
       const transaction = await wompi.createTransaction({
         amountInCents,
         reference,
         customerEmail: user.email,
         paymentMethodType: body.paymentMethodType,
         paymentMethod: Object.keys(paymentMethod).length > 0 ? paymentMethod : undefined,
-        customerData: {
-          fullName: body.fullName,
-          phoneNumber: body.phoneNumber,
-          legalId: body.userLegalId,
-          legalIdType: body.userLegalIdType,
-        },
+        customerData,
         redirectUrl,
       });
 
