@@ -132,6 +132,15 @@ export async function getTransaction(id: string) {
   return json.data;
 }
 
+export async function getTransactionByReference(reference: string) {
+  const res = await fetch(`${baseUrl()}/transactions?reference=${encodeURIComponent(reference)}`, {
+    headers: authHeaders(),
+  });
+  if (!res.ok) return null;
+  const json = await res.json();
+  return json.data?.[0] || null;
+}
+
 export async function getFinancialInstitutions() {
   const res = await fetch(`${baseUrl()}/pse/financial_institutions`, {
     headers: authHeaders(),
@@ -167,6 +176,7 @@ function generateReference(): string {
 export const wompi = {
   createTransaction,
   getTransaction,
+  getTransactionByReference,
   getFinancialInstitutions,
   getAcceptanceToken,
   generateIntegritySignature,

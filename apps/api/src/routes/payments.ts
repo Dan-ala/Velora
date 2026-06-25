@@ -143,16 +143,29 @@ export async function paymentRoutes(app: FastifyInstance) {
           include: { order: true },
         });
 
-        if (!payment || !payment.transactionId) {
+        if (!payment) {
           return reply.status(404).send({ success: false, error: 'Payment not found' });
         }
 
-        const transaction = await wompi.getTransaction(payment.transactionId);
+        let transactionId = payment.transactionId;
+
+        if (!transactionId) {
+          const tx = await wompi.getTransactionByReference(payment.reference!);
+          if (tx) {
+            transactionId = tx.id;
+          }
+        }
+
+        if (!transactionId) {
+          return reply.status(404).send({ success: false, error: 'Transaction not found on Wompi' });
+        }
+
+        const transaction = await wompi.getTransaction(transactionId);
 
         if (transaction.status === 'APPROVED') {
           await prisma.payment.update({
             where: { id: payment.id },
-            data: { status: 'completed' },
+            data: { status: 'completed', transactionId },
           });
           const order = await prisma.order.update({
             where: { id: payment.orderId },
@@ -198,6 +211,59 @@ export async function paymentRoutes(app: FastifyInstance) {
         pkPrefix: env.WOMPI_PUBLIC_KEY?.substring(0, 8),
       },
     });
+  });
+
+  app.post('/wompi/card-init', { preHandler: preHandler() }, async (request, reply) => {
+    try {
+      const user = (request as any).user;
+      const cart = await getCart(user.id);
+      if (cart.length === 0) {
+        return reply.status(400).send({ success: false, error: 'Cart is empty' });
+      }
+
+      const subtotal = calcTotal(cart);
+      const shipping = calcShipping(subtotal);
+      const total = subtotal + shipping;
+      const amountInCents = total;
+      const reference = wompi.generateReference();
+
+      const order = await prisma.order.create({
+        data: {
+          userId: user.id,
+          total,
+          status: 'pending',
+          reference,
+          items: {
+            create: cart.map((item) => ({
+              productId: item.productId,
+              quantity: item.quantity,
+              price: item.product.price,
+            })),
+          },
+          payments: {
+            create: {
+              provider: 'wompi',
+              status: 'pending',
+              reference,
+            },
+          },
+        },
+      });
+
+      const signature = wompi.generateIntegritySignature(amountInCents, reference, 'COP');
+
+      return reply.send({
+        success: true,
+        data: {
+          orderId: order.id,
+          reference,
+          signature,
+          amountInCents,
+        },
+      });
+    } catch (error: any) {
+      return reply.status(400).send({ success: false, error: error.message });
+    }
   });
 
   app.post('/wompi/create', { preHandler: preHandler() }, async (request, reply) => {

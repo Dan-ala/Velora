@@ -131,9 +131,75 @@ function CheckoutContent() {
     }
   }, []);
 
+  const handleCardPayment = async () => {
+    setIsProcessing(true);
+    setError('');
+
+    try {
+      await syncCartToBackend();
+
+      const publicKey = process.env.NEXT_PUBLIC_WOMPI_PUBLIC_KEY;
+      if (!publicKey) {
+        throw new Error('Wompi no está configurado');
+      }
+
+      const res = await api.post<{
+        success: boolean;
+        data: { orderId: string; reference: string; signature: string; amountInCents: number };
+      }>('/payments/wompi/card-init');
+
+      const { reference, signature, amountInCents } = res.data;
+
+      setPayment((prev) => ({
+        ...prev,
+        step: 'redirecting',
+        transactionId: null,
+        reference,
+      }));
+
+      const redirectUrl = `${window.location.origin}/checkout?wompi_reference=${reference}`;
+
+      const script = document.createElement('script');
+      script.src = 'https://checkout.wompi.co/widget.js';
+      script.onload = () => {
+        const WidgetCheckout = (window as any).WidgetCheckout;
+        if (!WidgetCheckout) {
+          setError('Error al cargar el widget de pago');
+          setIsProcessing(false);
+          return;
+        }
+
+        const checkout = new WidgetCheckout({
+          currency: 'COP',
+          amountInCents,
+          reference,
+          publicKey,
+          signature: { integrity: signature },
+          redirectUrl,
+          customerEmail: user?.email || '',
+        });
+
+        checkout.open(() => {
+          setIsProcessing(false);
+        });
+      };
+      script.onerror = () => {
+        setError('Error al cargar el widget de pago');
+        setIsProcessing(false);
+      };
+      document.head.appendChild(script);
+    } catch (err: any) {
+      setError(err.message || 'Error al procesar el pago');
+      setPayment((prev) => ({ ...prev, step: 'failed' }));
+      setIsProcessing(false);
+    }
+  };
+
   const handleSelectMethod = (method: PaymentMethod) => {
     setPayment((prev) => ({ ...prev, method }));
-    if (method === 'PSE') {
+    if (method === 'CARD') {
+      handleCardPayment();
+    } else if (method === 'PSE') {
       setPayment((prev) => ({ ...prev, step: 'form' }));
       fetchInstitutions();
     } else if (method === 'NEQUI' || method === 'BANCOLOMBIA_TRANSFER') {
