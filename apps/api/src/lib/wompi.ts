@@ -4,8 +4,6 @@ import { getEnv } from '../env';
 const BASE_URL = 'https://sandbox.wompi.co/v1';
 const LIVE_URL = 'https://production.wompi.co/v1';
 
-let cachedAcceptanceToken: { token: string; expiresAt: number } | null = null;
-
 function baseUrl() {
   return getEnv().WOMPI_LIVE ? LIVE_URL : BASE_URL;
 }
@@ -30,23 +28,11 @@ export function generateIntegritySignature(
 }
 
 export async function getAcceptanceToken(): Promise<string> {
-  const now = Date.now();
-  if (cachedAcceptanceToken && cachedAcceptanceToken.expiresAt > now) {
-    return cachedAcceptanceToken.token;
-  }
-
   const res = await fetch(`${baseUrl()}/merchants/${getEnv().WOMPI_PUBLIC_KEY}`, {
     headers: authHeaders(),
   });
   const json = await res.json();
-  const token = json.data?.presigned_acceptance?.acceptance_token || '';
-
-  cachedAcceptanceToken = {
-    token,
-    expiresAt: now + 3_600_000,
-  };
-
-  return token;
+  return json.data?.presigned_acceptance?.acceptance_token || '';
 }
 
 interface CreateTransactionParams {

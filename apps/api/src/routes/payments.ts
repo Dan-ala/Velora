@@ -21,6 +21,26 @@ function calcShipping(subtotal: number) {
   return subtotal >= 200000 ? 0 : 15000;
 }
 
+async function cancelPendingOrders(userId: string) {
+  const pendingOrders = await prisma.order.findMany({
+    where: { userId, status: 'pending' },
+    include: { payments: { where: { status: 'pending' } } },
+  });
+
+  for (const order of pendingOrders) {
+    await prisma.order.update({
+      where: { id: order.id },
+      data: { status: 'cancelled' },
+    });
+    for (const payment of order.payments) {
+      await prisma.payment.update({
+        where: { id: payment.id },
+        data: { status: 'failed' },
+      });
+    }
+  }
+}
+
 async function confirmOrder(userId: string, provider: 'stripe' | 'wompi') {
   const cart = await getCart(userId);
   if (cart.length === 0) throw new Error('Cart is empty');
@@ -221,6 +241,8 @@ export async function paymentRoutes(app: FastifyInstance) {
         return reply.status(400).send({ success: false, error: 'Cart is empty' });
       }
 
+      await cancelPendingOrders(user.id);
+
       const subtotal = calcTotal(cart);
       const shipping = calcShipping(subtotal);
       const total = subtotal + shipping;
@@ -273,6 +295,33 @@ export async function paymentRoutes(app: FastifyInstance) {
     }
   });
 
+  app.post('/wompi/cancel-pending', { preHandler: preHandler() }, async (request, reply) => {
+    try {
+      const user = (request as any).user;
+      const pendingOrders = await prisma.order.findMany({
+        where: { userId: user.id, status: 'pending' },
+        include: { payments: { where: { status: 'pending' } } },
+      });
+
+      for (const order of pendingOrders) {
+        await prisma.order.update({
+          where: { id: order.id },
+          data: { status: 'cancelled' },
+        });
+        for (const payment of order.payments) {
+          await prisma.payment.update({
+            where: { id: payment.id },
+            data: { status: 'failed' },
+          });
+        }
+      }
+
+      return reply.send({ success: true, cancelled: pendingOrders.length });
+    } catch (error: any) {
+      return reply.status(400).send({ success: false, error: error.message });
+    }
+  });
+
   app.post('/wompi/create', { preHandler: preHandler() }, async (request, reply) => {
     try {
       const user = (request as any).user;
@@ -291,6 +340,8 @@ export async function paymentRoutes(app: FastifyInstance) {
       if (cart.length === 0) {
         return reply.status(400).send({ success: false, error: 'Cart is empty' });
       }
+
+      await cancelPendingOrders(user.id);
 
       const subtotal = calcTotal(cart);
       const shipping = calcShipping(subtotal);

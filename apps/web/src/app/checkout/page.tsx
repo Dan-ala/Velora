@@ -14,7 +14,7 @@ import { api } from '@/lib/api';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Check, Lock, Landmark, Zap, Smartphone, CreditCard, ExternalLink, ChevronDown, ShieldCheck } from 'lucide-react';
+import { Check, Lock, Landmark, Zap, Smartphone, CreditCard, ExternalLink, ChevronDown, ShieldCheck, X, RefreshCw } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 
@@ -202,7 +202,22 @@ function CheckoutContent() {
     }
   };
 
-  const handleSelectMethod = (method: PaymentMethod) => {
+  const resetCheckout = useCallback(async () => {
+    try {
+      await api.post('/payments/wompi/cancel-pending');
+    } catch {
+      // best effort — proceed with reset even if cancel fails
+    }
+    setError('');
+    setPseForm({ documentType: 'CC', documentNumber: '', fullName: '', phoneNumber: '' });
+    setSelectedBank('');
+    setPayment({ step: 'select', method: null, transactionId: null, reference: null, asyncPaymentUrl: null });
+  }, []);
+
+  const handleSelectMethod = async (method: PaymentMethod) => {
+    if (payment.step === 'failed' || payment.step === 'pending' || payment.step === 'redirecting') {
+      await resetCheckout();
+    }
     setPayment((prev) => ({ ...prev, method }));
     if (method === 'CARD') {
       handleCardPayment();
@@ -213,6 +228,14 @@ function CheckoutContent() {
       setPayment((prev) => ({ ...prev, step: 'form' }));
     } else {
       handleCreateTransaction(method);
+    }
+  };
+
+  const handleRetry = async () => {
+    const currentMethod = payment.method;
+    await resetCheckout();
+    if (currentMethod) {
+      handleSelectMethod(currentMethod);
     }
   };
 
@@ -556,16 +579,25 @@ function CheckoutContent() {
                 {payment.step === 'failed' && (
                   <div className="mt-6 text-center">
                     <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-red-100">
-                      <Check size={24} className="text-red-500" />
+                      <X size={24} className="text-red-500" />
                     </div>
                     <p className="mt-4 text-sm font-medium">{t('checkout.paymentFailed')}</p>
                     <p className="mt-1 text-xs text-brand-stone">{error || t('checkout.paymentFailedDesc')}</p>
-                    <button
-                      onClick={() => setPayment((prev) => ({ ...prev, step: 'select', method: null }))}
-                      className="mt-6 flex h-12 w-full items-center justify-center gap-2 rounded-full bg-brand-black text-sm font-medium uppercase tracking-wider text-white transition-all hover:bg-brand-black/90"
-                    >
-                      {t('checkout.tryAgain')}
-                    </button>
+                    <div className="mt-6 flex flex-col gap-3">
+                      <button
+                        onClick={handleRetry}
+                        className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-brand-black text-sm font-medium uppercase tracking-wider text-white transition-all hover:bg-brand-black/90"
+                      >
+                        <RefreshCw size={14} />
+                        Intentar de nuevo con {payment.method === 'CARD' ? 'tarjeta' : payment.method === 'PSE' ? 'PSE' : payment.method === 'NEQUI' ? 'Nequi' : 'Bre-B'}
+                      </button>
+                      <button
+                        onClick={() => handleSelectMethod('CARD')}
+                        className="flex h-12 w-full items-center justify-center gap-2 rounded-full border border-brand-ivory text-sm font-medium transition-colors hover:bg-brand-ivory"
+                      >
+                        Intentar con otro método de pago
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>
