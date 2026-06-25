@@ -592,7 +592,7 @@ function CheckoutContent() {
                         Intentar de nuevo con {payment.method === 'CARD' ? 'tarjeta' : payment.method === 'PSE' ? 'PSE' : payment.method === 'NEQUI' ? 'Nequi' : 'Bre-B'}
                       </button>
                       <button
-                        onClick={() => handleSelectMethod('CARD')}
+                        onClick={resetCheckout}
                         className="flex h-12 w-full items-center justify-center gap-2 rounded-full border border-brand-ivory text-sm font-medium transition-colors hover:bg-brand-ivory"
                       >
                         Intentar con otro método de pago
