@@ -224,8 +224,15 @@ export async function paymentRoutes(app: FastifyInstance) {
       const subtotal = calcTotal(cart);
       const shipping = calcShipping(subtotal);
       const total = subtotal + shipping;
-      const amountInCents = total;
+      const amountInCents = total * 100;
       const reference = wompi.generateReference();
+
+      if (amountInCents < 150000) {
+        return reply.status(400).send({
+          success: false,
+          error: 'El monto mínimo para pagar con Wompi es $1,500 COP',
+        });
+      }
 
       const order = await prisma.order.create({
         data: {
@@ -288,8 +295,15 @@ export async function paymentRoutes(app: FastifyInstance) {
       const subtotal = calcTotal(cart);
       const shipping = calcShipping(subtotal);
       const total = subtotal + shipping;
-      const amountInCents = total;
+      const amountInCents = total * 100;
       const reference = wompi.generateReference();
+
+      if (amountInCents < 150000) {
+        return reply.status(400).send({
+          success: false,
+          error: 'El monto mínimo para pagar con Wompi es $1,500 COP',
+        });
+      }
 
       const paymentMethod: Record<string, unknown> | undefined =
         body.paymentMethodType === 'CARD'

@@ -15,6 +15,7 @@ import { motion } from 'framer-motion';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Check, Lock, Landmark, Zap, Smartphone, CreditCard, ExternalLink, ChevronDown, ShieldCheck } from 'lucide-react';
+import { toast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 
 interface FinancialInstitution {
@@ -132,6 +133,12 @@ function CheckoutContent() {
   }, []);
 
   const handleCardPayment = async () => {
+    const checkoutTotal = getTotal();
+    if (checkoutTotal < 1500) {
+      toast({ title: 'El monto mínimo para pagar con Wompi es $1,500 COP', variant: 'destructive' });
+      return;
+    }
+
     setIsProcessing(true);
     setError('');
 
@@ -216,6 +223,12 @@ function CheckoutContent() {
   };
 
   const handleCreateTransaction = async (method: PaymentMethod, pseData?: typeof pseForm) => {
+    const checkoutTotal = getTotal();
+    if (checkoutTotal < 1500) {
+      toast({ title: 'El monto mínimo para pagar con Wompi es $1,500 COP', variant: 'destructive' });
+      return;
+    }
+
     setIsProcessing(true);
     setError('');
 
