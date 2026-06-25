@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useState, useEffect, useCallback } from 'react';
+import { Suspense, useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Header } from '@/components/layout/header';
 import { Footer } from '@/components/layout/footer';
@@ -14,7 +14,7 @@ import { api } from '@/lib/api';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Check, Lock, Landmark, Zap, Smartphone, CreditCard, ExternalLink, ChevronDown, ShieldCheck, X, RefreshCw } from 'lucide-react';
+import { Check, Lock, Landmark, Zap, Smartphone, CreditCard, ExternalLink, ChevronDown, ShieldCheck, X, RefreshCw, Loader2 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 
@@ -78,6 +78,9 @@ function CheckoutContent() {
   }, [user, router]);
 
   const wompiReference = searchParams.get('wompi_reference');
+  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const pollingCountRef = useRef(0);
+  const POLLING_LIMIT = 36;
 
   const checkTransactionStatus = useCallback(async (id: string) => {
     setIsProcessing(true);
@@ -94,8 +97,13 @@ function CheckoutContent() {
         setPayment((prev) => ({ ...prev, step: 'complete' }));
       }
     } catch (err: any) {
-      setError(err.message || 'Transaction not completed');
-      setPayment((prev) => ({ ...prev, step: 'failed' }));
+      const msg = err.message || '';
+      setError(msg);
+      if (msg.includes('PENDING')) {
+        setPayment((prev) => ({ ...prev, step: 'pending' }));
+      } else {
+        setPayment((prev) => ({ ...prev, step: 'failed' }));
+      }
     } finally {
       setIsProcessing(false);
     }
@@ -103,14 +111,65 @@ function CheckoutContent() {
 
   useEffect(() => {
     if (wompiReference && payment.step === 'select') {
+      const storedTx = sessionStorage.getItem('wompi_tx');
       setPayment((prev) => ({
         ...prev,
         step: 'pending',
         reference: wompiReference,
+        transactionId: storedTx || prev.transactionId,
       }));
       checkTransactionStatus(wompiReference);
     }
   }, [wompiReference, payment.step, checkTransactionStatus]);
+
+  const txIdRef = useRef<string | null>(null);
+  const referenceRef = useRef<string | null>(null);
+
+  const pollingCallback = useCallback(async () => {
+    const txId = txIdRef.current;
+    if (!txId) return;
+
+    pollingCountRef.current += 1;
+    if (pollingCountRef.current >= POLLING_LIMIT) {
+      if (pollingRef.current) clearInterval(pollingRef.current);
+      return;
+    }
+
+    try {
+      const res = await api.get<{ success: boolean; data: { status: string } }>(
+        `/payments/wompi/transaction/${txId}`,
+      );
+      const status = res.data?.status;
+
+      if (status === 'APPROVED') {
+        if (pollingRef.current) clearInterval(pollingRef.current);
+        await checkTransactionStatus(referenceRef.current || txId);
+        sessionStorage.removeItem('wompi_tx');
+      } else if (['DECLINED', 'ERROR', 'VOIDED'].includes(status || '')) {
+        if (pollingRef.current) clearInterval(pollingRef.current);
+        setError('El pago fue rechazado. Intenta de nuevo.');
+        setPayment((prev) => ({ ...prev, step: 'failed' }));
+        sessionStorage.removeItem('wompi_tx');
+      }
+    } catch {
+      // ignore polling errors, keep trying
+    }
+  }, [checkTransactionStatus]);
+
+  useEffect(() => {
+    if (payment.step === 'pending' && (payment.transactionId || sessionStorage.getItem('wompi_tx'))) {
+      const storedTx = payment.transactionId || sessionStorage.getItem('wompi_tx');
+      txIdRef.current = storedTx;
+      referenceRef.current = payment.reference;
+      pollingCountRef.current = 0;
+
+      pollingRef.current = setInterval(pollingCallback, 5000);
+
+      return () => {
+        if (pollingRef.current) clearInterval(pollingRef.current);
+      };
+    }
+  }, [payment.step, payment.transactionId, payment.reference, pollingCallback]);
 
   const fetchInstitutions = useCallback(async () => {
     try {
@@ -208,6 +267,7 @@ function CheckoutContent() {
     } catch {
       // best effort — proceed with reset even if cancel fails
     }
+    sessionStorage.removeItem('wompi_tx');
     setError('');
     setPseForm({ documentType: 'CC', documentNumber: '', fullName: '', phoneNumber: '' });
     setSelectedBank('');
@@ -284,6 +344,10 @@ function CheckoutContent() {
       }>('/payments/wompi/create', body);
 
       const { transactionId, reference, asyncPaymentUrl, status } = res.data;
+
+      if (transactionId) {
+        sessionStorage.setItem('wompi_tx', transactionId);
+      }
 
       setPayment((prev) => ({
         ...prev,
@@ -557,21 +621,21 @@ function CheckoutContent() {
                 {(payment.step === 'redirecting' || payment.step === 'pending') && (
                   <div className="mt-6 text-center">
                     <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-brand-ivory">
-                      <ExternalLink size={24} className="text-brand-gold" />
+                      {payment.step === 'redirecting' ? (
+                        <ExternalLink size={24} className="text-brand-gold" />
+                      ) : (
+                        <Loader2 size={24} className="animate-spin text-brand-gold" />
+                      )}
                     </div>
                     <p className="mt-4 text-sm font-medium">
                       {payment.step === 'redirecting'
                         ? t('checkout.redirectingToWompi')
-                        : t('checkout.paymentPendingDesc')}
+                        : 'Tu pago está siendo procesado'}
                     </p>
                     {payment.step === 'pending' && (
-                      <button
-                        onClick={handleConfirmOrder}
-                        disabled={isProcessing}
-                        className="mt-6 flex h-12 w-full items-center justify-center gap-2 rounded-full bg-brand-black text-sm font-medium uppercase tracking-wider text-white transition-all hover:bg-brand-black/90 disabled:opacity-50"
-                      >
-                        {isProcessing ? t('checkout.processingPayment') : t('checkout.placeOrder', { amount: formatCurrency(grandTotal, currencyLocale(locale)) })}
-                      </button>
+                      <p className="mt-1 text-xs text-brand-stone">
+                        Estamos verificando tu pago con Wompi...
+                      </p>
                     )}
                   </div>
                 )}

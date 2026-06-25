@@ -86,15 +86,21 @@ model CartItem {
 }
 
 model Order {
-  id            String      @id @default(cuid())
-  userId        String
-  total         Int
-  status        OrderStatus @default(pending)
-  reference     String?     @unique
-  paymentStatus String?
-  paymentMethod String?
-  wompiTxId     String?     @unique
-  createdAt     DateTime    @default(now())
+  id                String      @id @default(cuid())
+  userId            String
+  total             Int
+  status            OrderStatus @default(pending)
+  reference         String?     @unique
+  paymentStatus     String?
+  paymentMethod     String?
+  wompiTxId         String?     @unique
+  trackingNumber    String?
+  carrier           String?
+  shippingStatus    String?     @default("pending")
+  shippingAddress   String?
+  shippingCity      String?
+  estimatedDelivery DateTime?
+  createdAt         DateTime    @default(now())
 
   user     User        @relation(fields: [userId], references: [id])
   items    OrderItem[]

@@ -27,6 +27,7 @@ export const orderService = {
           },
         },
         payments: true,
+        user: { select: { id: true, email: true } },
       },
     });
   },
@@ -130,6 +131,34 @@ export const orderService = {
           },
         },
         payments: true,
+      },
+    });
+  },
+
+  async ship(id: string, data: {
+    trackingNumber: string;
+    carrier: string;
+    estimatedDelivery?: Date;
+    shippingAddress?: string;
+  }) {
+    return prisma.order.update({
+      where: { id },
+      data: {
+        status: 'shipped',
+        shippingStatus: 'shipped',
+        trackingNumber: data.trackingNumber,
+        carrier: data.carrier,
+        estimatedDelivery: data.estimatedDelivery ?? null,
+        shippingAddress: data.shippingAddress ?? null,
+      },
+      include: {
+        items: {
+          include: {
+            product: { include: { images: { orderBy: { position: 'asc' } } } },
+          },
+        },
+        payments: true,
+        user: { select: { id: true, email: true } },
       },
     });
   },

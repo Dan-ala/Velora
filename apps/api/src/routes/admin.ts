@@ -2,6 +2,7 @@ import type { FastifyInstance } from 'fastify';
 import { productService } from '../services/product.service';
 import { orderService } from '../services/order.service';
 import { preHandler } from '../middleware/auth';
+import { sendOrderShipped } from '../lib/email';
 import z from 'zod';
 
 export async function adminRoutes(app: FastifyInstance) {
@@ -102,6 +103,35 @@ export async function adminRoutes(app: FastifyInstance) {
     }).parse(request.body);
 
     const order = await orderService.updateStatus(id, body.status);
+    return reply.send({ success: true, data: order });
+  });
+
+  app.patch('/orders/:id/ship', async (request, reply) => {
+    const { id } = z.object({ id: z.string() }).parse(request.params);
+    const body = z.object({
+      trackingNumber: z.string().min(1),
+      carrier: z.string().min(1),
+      estimatedDelivery: z.string().optional(),
+      shippingAddress: z.string().optional(),
+    }).parse(request.body);
+
+    const order = await orderService.ship(id, {
+      trackingNumber: body.trackingNumber,
+      carrier: body.carrier,
+      estimatedDelivery: body.estimatedDelivery ? new Date(body.estimatedDelivery) : undefined,
+      shippingAddress: body.shippingAddress,
+    });
+
+    await sendOrderShipped(order.user.email, {
+      id: order.id,
+      reference: order.reference,
+      trackingNumber: order.trackingNumber,
+      carrier: order.carrier,
+      estimatedDelivery: order.estimatedDelivery,
+      items: order.items,
+      total: order.total,
+    });
+
     return reply.send({ success: true, data: order });
   });
 }

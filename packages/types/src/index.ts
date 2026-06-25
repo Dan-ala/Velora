@@ -46,8 +46,16 @@ export interface Order {
   userId: string;
   total: number;
   status: OrderStatus;
+  reference: string | null;
+  trackingNumber: string | null;
+  carrier: string | null;
+  shippingStatus: string | null;
+  shippingAddress: string | null;
+  shippingCity: string | null;
+  estimatedDelivery: string | null;
   createdAt: string;
   items: OrderItem[];
+  payments?: Payment[];
   user?: { id: string; email: string };
 }
 

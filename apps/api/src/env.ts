@@ -16,6 +16,8 @@ const envSchema = z.object({
   WOMPI_INTEGRITY_KEY: z.string().optional(),
   WOMPI_EVENT_KEY: z.string().optional(),
   WOMPI_LIVE: z.coerce.boolean().default(false),
+  RESEND_API_KEY: z.string().optional(),
+  RESEND_FROM_EMAIL: z.string().default('Velora <pedidos@velora.co>'),
   FRONTEND_URL: z.string().default('http://localhost:3000'),
   PORT: z.coerce.number().default(4000),
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),

@@ -31,26 +31,6 @@ function generateIntegritySignature(
   return hash.digest('hex');
 }
 
-function verifyWebhookEvent(event: Record<string, any>): boolean {
-  const env = getEnv();
-  const { signature, timestamp } = event;
-  if (!signature?.properties || !signature?.checksum || !timestamp) return false;
-  if (!env.WOMPI_EVENT_KEY) return false;
-
-  const tx = event.data?.transaction;
-  if (!tx) return false;
-
-  const values = signature.properties.map((prop: string) => String(tx[prop] ?? ''));
-  const payload = values.join('') + String(timestamp) + env.WOMPI_EVENT_KEY;
-  const hash = crypto.createHash('sha256').update(payload).digest('hex');
-
-  try {
-    return crypto.timingSafeEqual(Buffer.from(hash), Buffer.from(signature.checksum));
-  } catch {
-    return false;
-  }
-}
-
 export async function wompiRoutes(app: FastifyInstance) {
   app.post('/signature', { preHandler: preHandler() }, async (request, reply) => {
     try {
@@ -79,40 +59,6 @@ export async function wompiRoutes(app: FastifyInstance) {
       });
     } catch (error: any) {
       return reply.status(400).send({ success: false, error: error.message });
-    }
-  });
-
-  app.post('/webhook', async (request, reply) => {
-    try {
-      const event = request.body as Record<string, any>;
-
-      if (!verifyWebhookEvent(event)) {
-        return reply.status(401).send({ success: false, error: 'Invalid signature' });
-      }
-
-      if (event.event === 'transaction.updated' && event.data?.transaction) {
-        const tx = event.data.transaction;
-
-        const order = await prisma.order.findFirst({
-          where: { reference: tx.reference },
-        });
-
-        if (order) {
-          await prisma.order.update({
-            where: { id: order.id },
-            data: {
-              wompiTxId: tx.id,
-              paymentStatus: tx.status,
-              paymentMethod: tx.payment_method_type,
-              status: tx.status === 'APPROVED' ? 'confirmed' : tx.status === 'DECLINED' ? 'cancelled' : undefined,
-            },
-          });
-        }
-      }
-
-      return reply.send({ received: true });
-    } catch (error: any) {
-      return reply.status(500).send({ success: false, error: error.message });
     }
   });
 

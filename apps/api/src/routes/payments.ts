@@ -4,6 +4,7 @@ import { prisma } from '../lib/prisma';
 import { preHandler } from '../middleware/auth';
 import { getEnv } from '../env';
 import { wompi } from '../lib/wompi';
+import { sendOrderConfirmation, sendOrderFailed } from '../lib/email';
 import z from 'zod';
 
 async function getCart(userId: string) {
@@ -177,27 +178,59 @@ export async function paymentRoutes(app: FastifyInstance) {
         }
 
         if (!transactionId) {
-          return reply.status(404).send({ success: false, error: 'Transaction not found on Wompi' });
+          return reply.status(404).send({ success: false, error: 'Payment not found on Wompi', transactionId: null });
         }
 
         const transaction = await wompi.getTransaction(transactionId);
 
         if (transaction.status === 'APPROVED') {
+          const order = await prisma.order.findUnique({
+            where: { id: payment.orderId },
+            include: {
+              items: { include: { product: true } },
+            },
+          });
+
+          if (!order) {
+            return reply.status(404).send({ success: false, error: 'Order not found' });
+          }
+
           await prisma.payment.update({
             where: { id: payment.id },
             data: { status: 'completed', transactionId },
           });
-          const order = await prisma.order.update({
-            where: { id: payment.orderId },
-            data: { status: 'confirmed' },
-          });
+
+          if (order.status !== 'confirmed') {
+            await prisma.order.update({
+              where: { id: payment.orderId },
+              data: { status: 'confirmed' },
+            });
+
+            for (const item of order.items) {
+              const product = item.product;
+              await prisma.product.update({
+                where: { id: item.productId },
+                data: { stock: product.stock - item.quantity },
+              });
+              await prisma.inventoryEvent.create({
+                data: {
+                  productId: item.productId,
+                  oldStock: product.stock,
+                  newStock: product.stock - item.quantity,
+                },
+              });
+            }
+          }
+
           await prisma.cartItem.deleteMany({ where: { userId: user.id } });
+
           return reply.send({ success: true, data: order });
         }
 
         return reply.status(400).send({
           success: false,
           error: `Transaction status: ${transaction.status}`,
+          transactionId,
         });
       }
 
@@ -437,52 +470,103 @@ export async function paymentRoutes(app: FastifyInstance) {
     }
   });
 
-  app.get('/wompi/transaction/:id', { preHandler: preHandler() }, async (request, reply) => {
+  app.get('/wompi/transaction/:id', async (request, reply) => {
     const { id } = z.object({ id: z.string() }).parse(request.params);
     const transaction = await wompi.getTransaction(id);
     return reply.send({ success: true, data: transaction });
   });
 
   app.post('/wompi/webhook', async (request: FastifyRequest, reply) => {
-    const env = getEnv();
-    const signature = request.headers['x-event-signature'] as string;
+    try {
+      const event = request.body as Record<string, any>;
 
-    const rawBody = (request.body as any)?.rawBody || JSON.stringify(request.body);
+      if (!wompi.verifyWebhookEvent(event)) {
+        return reply.status(401).send({ success: false, error: 'Invalid signature' });
+      }
 
-    if (!wompi.verifyWebhookSignature(rawBody, signature)) {
-      return reply.status(401).send({ success: false, error: 'Invalid signature' });
-    }
+      if (event.event !== 'transaction.updated' || !event.data?.transaction) {
+        return reply.send({ received: true });
+      }
 
-    const event = request.body as any;
-    if (event.event === 'transaction.updated' && event.data?.transaction) {
       const tx = event.data.transaction;
+
       const payment = await prisma.payment.findFirst({
         where: { transactionId: tx.id, provider: 'wompi' },
+        include: {
+          order: {
+            include: {
+              items: { include: { product: true } },
+              user: { select: { id: true, email: true } },
+            },
+          },
+        },
       });
 
-      if (payment) {
-        if (tx.status === 'APPROVED') {
-          await prisma.payment.update({
-            where: { id: payment.id },
-            data: { status: 'completed' },
+      if (!payment?.order) {
+        return reply.send({ received: true });
+      }
+
+      const order = payment.order;
+
+      if (tx.status === 'APPROVED') {
+        if (order.status === 'confirmed') {
+          return reply.send({ received: true });
+        }
+
+        await prisma.payment.update({
+          where: { id: payment.id },
+          data: { status: 'completed' },
+        });
+
+        await prisma.order.update({
+          where: { id: order.id },
+          data: { status: 'confirmed' },
+        });
+
+        for (const item of order.items) {
+          const product = item.product;
+          await prisma.product.update({
+            where: { id: item.productId },
+            data: { stock: product.stock - item.quantity },
           });
-          await prisma.order.update({
-            where: { id: payment.orderId },
-            data: { status: 'confirmed' },
-          });
-        } else if (['DECLINED', 'ERROR', 'VOIDED'].includes(tx.status)) {
-          await prisma.payment.update({
-            where: { id: payment.id },
-            data: { status: 'failed' },
-          });
-          await prisma.order.update({
-            where: { id: payment.orderId },
-            data: { status: 'cancelled' },
+          await prisma.inventoryEvent.create({
+            data: {
+              productId: item.productId,
+              oldStock: product.stock,
+              newStock: product.stock - item.quantity,
+            },
           });
         }
-      }
-    }
 
-    return reply.send({ received: true });
+        await prisma.cartItem.deleteMany({ where: { userId: order.userId } });
+
+        await sendOrderConfirmation(order.user.email, {
+          id: order.id,
+          reference: order.reference,
+          total: order.total,
+          items: order.items,
+        });
+      } else if (['DECLINED', 'ERROR', 'VOIDED'].includes(tx.status)) {
+        await prisma.payment.update({
+          where: { id: payment.id },
+          data: { status: 'failed' },
+        });
+
+        await prisma.order.update({
+          where: { id: order.id },
+          data: { status: 'cancelled' },
+        });
+
+        await sendOrderFailed(order.user.email, {
+          id: order.id,
+          reference: order.reference,
+        });
+      }
+
+      return reply.send({ received: true });
+    } catch (error: any) {
+      request.log.error(error);
+      return reply.status(500).send({ success: false, error: error.message });
+    }
   });
 }

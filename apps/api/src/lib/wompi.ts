@@ -141,6 +141,31 @@ export async function getFinancialInstitutions() {
   }));
 }
 
+/**
+ * Verifies a Wompi webhook event signature using the in-body signature fields.
+ * The payload is built from the transaction properties listed in signature.properties,
+ * concatenated with the timestamp and event key.
+ */
+export function verifyWebhookEvent(event: Record<string, any>): boolean {
+  const env = getEnv();
+  const { signature, timestamp } = event;
+  if (!signature?.properties || !signature?.checksum || !timestamp) return false;
+  if (!env.WOMPI_EVENT_KEY) return false;
+
+  const tx = event.data?.transaction;
+  if (!tx) return false;
+
+  const values = signature.properties.map((prop: string) => String(tx[prop] ?? ''));
+  const payload = values.join('') + String(timestamp) + env.WOMPI_EVENT_KEY;
+  const hash = crypto.createHash('sha256').update(payload).digest('hex');
+
+  try {
+    return crypto.timingSafeEqual(Buffer.from(hash), Buffer.from(signature.checksum));
+  } catch {
+    return false;
+  }
+}
+
 export function verifyWebhookSignature(
   body: string,
   signature: string,
@@ -167,6 +192,7 @@ export const wompi = {
   getAcceptanceToken,
   generateIntegritySignature,
   verifyWebhookSignature,
+  verifyWebhookEvent,
   generateReference,
   baseUrl,
 };
