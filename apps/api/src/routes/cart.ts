@@ -46,4 +46,18 @@ export async function cartRoutes(app: FastifyInstance) {
     await cartService.clearCart(user.id);
     return reply.send({ success: true, message: 'Cart cleared' });
   });
+
+  app.put('/sync', { preHandler: preHandler() }, async (request, reply) => {
+    const user = (request as any).user;
+    const body = z.object({
+      items: z.array(z.object({
+        productId: z.string(),
+        quantity: z.number().int().positive(),
+      })),
+    }).parse(request.body);
+
+    await cartService.syncItems(user.id, body.items);
+    const cart = await cartService.findByUser(user.id);
+    return reply.send({ success: true, data: cart });
+  });
 }

@@ -60,6 +60,15 @@ export const cartService = {
     return prisma.cartItem.deleteMany({ where: { userId } });
   },
 
+  async syncItems(userId: string, items: { productId: string; quantity: number }[]) {
+    await prisma.cartItem.deleteMany({ where: { userId } });
+    if (items.length === 0) return [];
+    return prisma.cartItem.createManyAndReturn({
+      data: items.map((item) => ({ userId, ...item })),
+      skipDuplicates: true,
+    });
+  },
+
   async getItemCount(userId: string) {
     const result = await prisma.cartItem.aggregate({
       where: { userId },

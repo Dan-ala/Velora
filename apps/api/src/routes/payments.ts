@@ -17,6 +17,10 @@ function calcTotal(cart: Awaited<ReturnType<typeof getCart>>) {
   return cart.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
 }
 
+function calcShipping(subtotal: number) {
+  return subtotal >= 200000 ? 0 : 15000;
+}
+
 async function confirmOrder(userId: string, provider: 'stripe' | 'wompi') {
   const cart = await getCart(userId);
   if (cart.length === 0) throw new Error('Cart is empty');
@@ -215,7 +219,9 @@ export async function paymentRoutes(app: FastifyInstance) {
         return reply.status(400).send({ success: false, error: 'Cart is empty' });
       }
 
-      const total = calcTotal(cart);
+      const subtotal = calcTotal(cart);
+      const shipping = calcShipping(subtotal);
+      const total = subtotal + shipping;
       const amountInCents = total;
       const reference = wompi.generateReference();
 

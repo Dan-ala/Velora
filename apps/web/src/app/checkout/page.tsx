@@ -144,10 +144,9 @@ function CheckoutContent() {
   };
 
   const syncCartToBackend = async () => {
-    await api.delete('/cart');
-    for (const item of items) {
-      await api.post('/cart', { productId: item.productId, quantity: item.quantity });
-    }
+    await api.put('/cart/sync', {
+      items: items.map((item) => ({ productId: item.productId, quantity: item.quantity })),
+    });
   };
 
   const handleCreateTransaction = async (method: PaymentMethod, pseData?: typeof pseForm) => {
