@@ -10,7 +10,8 @@ import { motion } from 'framer-motion';
 import { toast } from '@/hooks/use-toast';
 import type { Product } from '@velora/types';
 import { cn } from '@/lib/utils';
-import { useRef, useCallback } from 'react';
+import { useRef, useCallback, useState } from 'react';
+import { getOptimizedImageUrl, getBlurUrl } from '@/lib/cloudinary';
 
 interface Props {
   product: Product;
@@ -57,10 +58,12 @@ export function ProductCard({ product, priority = false }: Props) {
         <div className="relative aspect-[3/4] overflow-hidden rounded-xl bg-brand-ivory">
           {image ? (
             <Image
-              src={image.url}
+              src={getOptimizedImageUrl(image.url, 600)}
               alt={product.name}
               fill
               priority={priority}
+              placeholder="blur"
+              blurDataURL={getBlurUrl(image.url)}
               className="object-cover transition-transform duration-700 group-hover:scale-105"
               sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
             />

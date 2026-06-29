@@ -1,26 +1,25 @@
 'use client';
 
-import { useEffect, useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import { Header } from '@/components/layout/header';
 import { Footer } from '@/components/layout/footer';
 import { BottomNav } from '@/components/layout/bottom-nav';
 import { CartSidebar } from '@/components/layout/cart-sidebar';
-import { api } from '@/lib/api';
 import { useLocale } from '@/providers/locale-provider';
 import { formatCurrency, currencyLocale } from '@/lib/utils';
 import { useCartStore } from '@/stores/cart-store';
+import { useProduct } from '@/hooks/use-products';
+import { getOptimizedImageUrl, getBlurUrl } from '@/lib/cloudinary';
 import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
 import { ShoppingBag, ChevronLeft, ChevronRight, Minus, Plus, Truck, Shield, RotateCcw } from 'lucide-react';
 import Link from 'next/link';
-import type { Product } from '@velora/types';
 
 export default function ProductDetailPage() {
   const params = useParams();
   const { locale, t } = useLocale();
-  const [product, setProduct] = useState<Product | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const { data: product, isLoading } = useProduct(params.id as string);
   const [currentImage, setCurrentImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [isAdding, setIsAdding] = useState(false);
@@ -49,13 +48,6 @@ export default function ProductDetailPage() {
       setIsAdding(false);
     }, 500);
   }, [addItem, openCart, product, images]);
-
-  useEffect(() => {
-    api.get<{ success: boolean; data: Product }>(`/products/${params.id}`)
-      .then((res) => setProduct(res.data))
-      .catch(() => {})
-      .finally(() => setIsLoading(false));
-  }, [params.id]);
 
   if (isLoading) {
     return (
@@ -124,12 +116,14 @@ export default function ProductDetailPage() {
                   >
                     {images[currentImage]?.url ? (
                       <Image
-                        src={images[currentImage].url}
+                        src={getOptimizedImageUrl(images[currentImage].url, 800)}
                         alt={product.name}
                         fill
                         className="object-cover"
                         sizes="(max-width: 768px) 100vw, 50vw"
                         priority
+                        placeholder="blur"
+                        blurDataURL={getBlurUrl(images[currentImage].url)}
                       />
                     ) : (
                       <div className="flex h-full items-center justify-center text-brand-stone">
@@ -178,7 +172,7 @@ export default function ProductDetailPage() {
                       }`}
                     >
                       <Image
-                        src={img.url}
+                        src={getOptimizedImageUrl(img.url, 160)}
                         alt={`${product.name} ${i + 1}`}
                         fill
                         className="object-cover"

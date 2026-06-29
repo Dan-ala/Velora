@@ -8,6 +8,7 @@ import { useCartStore } from '@/stores/cart-store';
 import { useAuthStore } from '@/stores/auth-store';
 import { useLocale } from '@/providers/locale-provider';
 import { formatCurrency, currencyLocale } from '@/lib/utils';
+import { getOptimizedImageUrl } from '@/lib/cloudinary';
 import { Minus, Plus, ShoppingBag, Trash2, ArrowLeft } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -58,7 +59,7 @@ export default function CartPage() {
                   >
                     <div className="relative h-24 w-24 flex-shrink-0 overflow-hidden rounded-lg bg-brand-ivory">
                       <Image
-                        src={item.image}
+                        src={getOptimizedImageUrl(item.image, 160)}
                         alt={item.name}
                         fill
                         className="object-cover"

@@ -1,41 +1,26 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 import { Header } from '@/components/layout/header';
 import { Footer } from '@/components/layout/footer';
 import { BottomNav } from '@/components/layout/bottom-nav';
 import { CartSidebar } from '@/components/layout/cart-sidebar';
 import { ProductCard } from '@/components/product/product-card';
-import { api } from '@/lib/api';
 import { CATEGORIES } from '@velora/types';
 import { useLocale } from '@/providers/locale-provider';
+import { useProducts } from '@/hooks/use-products';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
-import type { Product } from '@velora/types';
 
 export default function ProductsPage() {
   const { locale, t } = useLocale();
-  const [products, setProducts] = useState<Product[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState('');
+  const { data: products, isLoading } = useProducts(activeCategory || undefined);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     setActiveCategory(params.get('category') || '');
   }, []);
-
-  useEffect(() => {
-    setIsLoading(true);
-    const params = new URLSearchParams();
-    if (activeCategory) params.set('category', activeCategory);
-    params.set('limit', '50');
-
-    api.get<{ success: boolean; data: Product[] }>(`/products?${params.toString()}`)
-      .then((res) => setProducts(Array.isArray(res.data) ? res.data : []))
-      .catch(() => setProducts([]))
-      .finally(() => setIsLoading(false));
-  }, [activeCategory]);
 
   return (
     <>
@@ -96,7 +81,7 @@ export default function ProductsPage() {
                   </div>
                 ))}
               </div>
-            ) : products.length === 0 ? (
+            ) : !products || products.length === 0 ? (
               <div className="py-20 text-center">
                 <p className="text-brand-stone">{t('common.noProducts')}</p>
               </div>

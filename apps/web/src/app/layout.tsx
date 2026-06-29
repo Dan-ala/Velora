@@ -4,6 +4,7 @@ import { QueryProvider } from '@/providers/query-provider';
 import { AuthProvider } from '@/providers/auth-provider';
 import { LocaleProvider } from '@/providers/locale-provider';
 import { Toaster } from '@/components/ui/toaster';
+import { KeepAlive } from '@/components/keep-alive';
 
 export const metadata: Metadata = {
   title: 'VELORA — Wear your identity',
@@ -28,6 +29,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <LocaleProvider>
               {children}
               <Toaster />
+              <KeepAlive />
             </LocaleProvider>
           </AuthProvider>
         </QueryProvider>

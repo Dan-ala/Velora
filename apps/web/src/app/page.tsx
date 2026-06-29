@@ -1,18 +1,16 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import { Header } from '@/components/layout/header';
 import { Footer } from '@/components/layout/footer';
 import { BottomNav } from '@/components/layout/bottom-nav';
 import { CartSidebar } from '@/components/layout/cart-sidebar';
 import { ProductCard } from '@/components/product/product-card';
-import { api } from '@/lib/api';
 import { useLocale } from '@/providers/locale-provider';
 import { formatCurrency, currencyLocale } from '@/lib/utils';
+import { useFeaturedProducts } from '@/hooks/use-products';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import Image from 'next/image';
-import type { Product } from '@velora/types';
 
 const CATEGORIES: { slug: string; image: string }[] = [
   { slug: 'camisetas', image: 'https://res.cloudinary.com/dvjfilxjp/image/upload/q_auto,f_auto/v1/velora/category-shirts' },
@@ -25,8 +23,7 @@ const CATEGORIES: { slug: string; image: string }[] = [
 
 export default function HomePage() {
   const { locale, t } = useLocale();
-  const [featured, setFeatured] = useState<Product[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const { data: featured, isLoading } = useFeaturedProducts();
 
   const categoryLabels: Record<string, string> = {
     camisetas: t('nav.camisetas'),
@@ -36,14 +33,6 @@ export default function HomePage() {
     abrigos: t('nav.abrigos'),
     accesorios: t('nav.accesorios'),
   };
-
-  useEffect(() => {
-    setIsLoading(true);
-    api.get<{ success: boolean; data: Product[] }>('/products/featured')
-      .then((res) => setFeatured(res.data))
-      .catch(() => {})
-      .finally(() => setIsLoading(false));
-  }, []);
 
   return (
     <>
@@ -150,7 +139,7 @@ export default function HomePage() {
                 </div>
               ))}
             </div>
-          ) : featured.length === 0 ? (
+          ) : !featured || featured.length === 0 ? (
             <div className="py-12 text-center">
               <p className="text-brand-stone">{t('common.noProducts')}</p>
             </div>

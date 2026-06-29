@@ -5,6 +5,7 @@ import { useCartStore } from '@/stores/cart-store';
 import { useAuthStore } from '@/stores/auth-store';
 import { useLocale } from '@/providers/locale-provider';
 import { formatCurrency, currencyLocale } from '@/lib/utils';
+import { getOptimizedImageUrl } from '@/lib/cloudinary';
 import { X, Minus, Plus, ShoppingBag, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -80,7 +81,7 @@ export function CartSidebar() {
                       >
                         <div className="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-lg bg-brand-ivory tablet:h-20 tablet:w-20">
                           <Image
-                            src={item.image}
+                            src={getOptimizedImageUrl(item.image, 160)}
                             alt={item.name}
                             fill
                             className="object-cover"
