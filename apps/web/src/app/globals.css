@@ -62,14 +62,7 @@ html {
 }
 
 body {
-  overscroll-behavior: none;
   -webkit-overflow-scrolling: touch;
-}
-
-@media (pointer: coarse) {
-  * {
-    overscroll-behavior: none;
-  }
 }
 
 
