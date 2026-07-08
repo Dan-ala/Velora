@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/stores/auth-store';
 import { api } from '@/lib/api';
 import { formatCurrency, formatDate } from '@/lib/utils';
-import { Package, Search, X, Truck, Eye } from 'lucide-react';
+import { Package, Search, X, Truck, Eye, ExternalLink } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import type { Order } from '@velora/types';
 
@@ -275,13 +275,13 @@ export default function AdminOrdersPage() {
                   </div>
                   <div className="flex items-center gap-2">
                     <button
-                      onClick={() => router.push(`/orders/${order.id}`)}
+                      onClick={() => router.push(`/admin/orders/${order.id}`)}
                       className="flex h-9 items-center gap-1.5 rounded-full border border-brand-ivory px-4 text-[10px] font-medium uppercase tracking-wider text-brand-stone transition-colors hover:border-brand-gold hover:text-brand-gold"
                     >
                       <Eye size={12} />
-                      Ver
+                      Detalle
                     </button>
-                    {order.status === 'confirmed' && (
+                    {order.status === 'confirmed' && !order.trackingNumber && (
                       <button
                         onClick={() => setShipOrder(order)}
                         className="flex h-9 items-center gap-1.5 rounded-full bg-brand-black px-4 text-[10px] font-medium uppercase tracking-wider text-white transition-colors hover:bg-brand-black/90"
@@ -289,6 +289,17 @@ export default function AdminOrdersPage() {
                         <Truck size={12} />
                         Enviar
                       </button>
+                    )}
+                    {(order as Order & { trackingToken?: { token: string } }).trackingToken && (
+                      <a
+                        href={`/tracking/${(order as Order & { trackingToken?: { token: string } }).trackingToken!.token}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex h-9 items-center gap-1.5 rounded-full border border-brand-ivory px-3 text-[10px] font-medium text-brand-stone hover:text-brand-gold"
+                      >
+                        <ExternalLink size={10} />
+                        Link
+                      </a>
                     )}
                   </div>
                 </div>

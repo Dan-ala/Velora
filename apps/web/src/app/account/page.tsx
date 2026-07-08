@@ -113,15 +113,14 @@ export default function AccountPage() {
 
               <div className="rounded-xl bg-white p-6 shadow-sm">
                 <nav className="space-y-2">
-                  <Link
-                    href="/account"
-                    className="flex items-center justify-between rounded-lg bg-brand-ivory px-4 py-3 text-sm font-medium"
-                  >
+                  <div className="flex items-center justify-between rounded-lg bg-brand-ivory px-4 py-3 text-sm font-medium">
                     <div className="flex items-center gap-3">
                       <Package size={16} /> {t('account.orders')}
                     </div>
-                    <ChevronRight size={14} />
-                  </Link>
+                    <span className="rounded-full bg-brand-gold/10 px-2 py-0.5 text-[10px] font-medium text-brand-gold">
+                      {orders.length}
+                    </span>
+                  </div>
                 </nav>
               </div>
             </div>
@@ -140,11 +139,10 @@ export default function AccountPage() {
               ) : (
                 <div className="space-y-4">
                   {orders.map((order) => (
-                    <motion.div
+                    <Link
                       key={order.id}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="rounded-xl bg-white p-6 shadow-sm"
+                      href={`/orders/${order.id}`}
+                      className="block rounded-xl bg-white p-6 shadow-sm transition-shadow hover:shadow-md"
                     >
                       <div className="flex items-center justify-between">
                         <div>
@@ -159,7 +157,7 @@ export default function AccountPage() {
                       </div>
                       <p className="mt-2 text-xs text-brand-stone">{formatDate(order.createdAt, dateLocale(locale))}</p>
                       {order.items && (
-                        <div className="mt-3 flex gap-2">
+                        <div className="mt-3 flex items-center gap-2">
                           {order.items.slice(0, 3).map((item) => (
                             <div
                               key={item.id}
@@ -179,9 +177,10 @@ export default function AccountPage() {
                               +{order.items.length - 3}
                             </div>
                           )}
+                          <ChevronRight size={14} className="ml-auto text-brand-stone" />
                         </div>
                       )}
-                    </motion.div>
+                    </Link>
                   ))}
                 </div>
               )}

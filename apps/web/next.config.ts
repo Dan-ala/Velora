@@ -1,5 +1,9 @@
 import type { NextConfig } from 'next';
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL?.startsWith('http')
+  ? process.env.NEXT_PUBLIC_API_URL
+  : undefined;
+
 const nextConfig: NextConfig = {
   images: {
     remotePatterns: [
@@ -11,10 +15,15 @@ const nextConfig: NextConfig = {
     ],
   },
   async rewrites() {
+    const apiDest = API_URL || (
+      process.env.NODE_ENV === 'development'
+        ? 'http://localhost:4000'
+        : 'https://velora-api-w930.onrender.com'
+    );
     return [
       {
         source: '/api/:path*',
-        destination: 'https://velora-api-w930.onrender.com/api/:path*',
+        destination: `${apiDest}/api/:path*`,
       },
     ];
   },

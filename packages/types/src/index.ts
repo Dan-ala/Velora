@@ -45,8 +45,12 @@ export interface Order {
   id: string;
   userId: string;
   total: number;
+  shippingCost: number | null;
   status: OrderStatus;
   reference: string | null;
+  paymentStatus: string | null;
+  paymentMethod: string | null;
+  phoneNumber: string | null;
   trackingNumber: string | null;
   carrier: string | null;
   shippingStatus: string | null;
@@ -57,6 +61,11 @@ export interface Order {
   items: OrderItem[];
   payments?: Payment[];
   user?: { id: string; email: string };
+  timeline?: OrderTimeline[];
+  notes?: OrderNote[];
+  guides?: ShippingGuide[];
+  trackingToken?: TrackingToken | null;
+  notificationLogs?: NotificationLog[];
 }
 
 export interface OrderItem {
@@ -69,6 +78,57 @@ export interface OrderItem {
 }
 
 export type OrderStatus = 'pending' | 'confirmed' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
+export type OrderEventType = 'order_created' | 'payment_confirmed' | 'preparing' | 'packed' | 'guide_generated' | 'handed_to_carrier' | 'in_transit' | 'out_for_delivery' | 'delivered' | 'cancelled' | 'returned' | 'note_added';
+export type NotificationChannelType = 'email' | 'whatsapp' | 'sms' | 'push';
+
+export interface OrderTimeline {
+  id: string;
+  orderId: string;
+  event: OrderEventType;
+  metadata: Record<string, unknown> | null;
+  createdAt: string;
+}
+
+export interface OrderNote {
+  id: string;
+  orderId: string;
+  content: string;
+  authorId: string | null;
+  author?: { id: string; email: string };
+  createdAt: string;
+}
+
+export interface ShippingGuide {
+  id: string;
+  orderId: string;
+  provider: string;
+  guideNumber: string;
+  trackingUrl: string | null;
+  labelUrl: string | null;
+  barcodeUrl: string | null;
+  cost: number | null;
+  status: string;
+  createdAt: string;
+}
+
+export interface TrackingToken {
+  id: string;
+  orderId: string;
+  token: string;
+  expiresAt: string | null;
+  createdAt: string;
+}
+
+export interface NotificationLog {
+  id: string;
+  orderId: string;
+  channel: NotificationChannelType;
+  event: OrderEventType;
+  status: string;
+  recipient: string;
+  metadata: Record<string, unknown> | null;
+  createdAt: string;
+}
 
 export interface Payment {
   id: string;

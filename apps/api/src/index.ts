@@ -12,6 +12,7 @@ import { adminRoutes } from './routes/admin';
 import { inventoryRoutes } from './routes/inventory';
 import { cloudinaryRoutes } from './routes/cloudinary';
 import { wompiRoutes } from './routes/wompi';
+import { trackingRoutes } from './routes/tracking';
 
 async function bootstrap() {
   const env = getEnv();
@@ -48,6 +49,7 @@ async function bootstrap() {
   await app.register(inventoryRoutes, { prefix: '/api/inventory' });
   await app.register(cloudinaryRoutes, { prefix: '/api/cloudinary' });
   await app.register(wompiRoutes, { prefix: '/api/wompi' });
+  await app.register(trackingRoutes, { prefix: '/api/tracking' });
 
   try {
     await app.listen({ port: env.PORT, host: '0.0.0.0' });

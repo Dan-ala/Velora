@@ -22,6 +22,28 @@ enum OrderStatus {
   cancelled
 }
 
+enum OrderEvent {
+  order_created
+  payment_confirmed
+  preparing
+  packed
+  guide_generated
+  handed_to_carrier
+  in_transit
+  out_for_delivery
+  delivered
+  cancelled
+  returned
+  note_added
+}
+
+enum NotificationChannel {
+  email
+  whatsapp
+  sms
+  push
+}
+
 enum PaymentProvider {
   stripe
   wompi
@@ -42,6 +64,7 @@ model User {
 
   cart   CartItem[]
   orders Order[]
+  notes  OrderNote[]
 }
 
 model Product {
@@ -89,11 +112,13 @@ model Order {
   id                String      @id @default(cuid())
   userId            String
   total             Int
+  shippingCost      Int?
   status            OrderStatus @default(pending)
   reference         String?     @unique
   paymentStatus     String?
   paymentMethod     String?
   wompiTxId         String?     @unique
+  phoneNumber       String?
   trackingNumber    String?
   carrier           String?
   shippingStatus    String?     @default("pending")
@@ -102,9 +127,18 @@ model Order {
   estimatedDelivery DateTime?
   createdAt         DateTime    @default(now())
 
-  user     User        @relation(fields: [userId], references: [id])
-  items    OrderItem[]
-  payments Payment[]
+  user            User              @relation(fields: [userId], references: [id])
+  items           OrderItem[]
+  payments        Payment[]
+  timeline        OrderTimeline[]
+  notes           OrderNote[]
+  guides          ShippingGuide[]
+  trackingToken   TrackingToken?
+  notificationLogs NotificationLog[]
+
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
 }
 
 model OrderItem {
@@ -145,5 +179,78 @@ model InventoryEvent {
   product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@index([productId])
+  @@index([createdAt])
+}
+
+model OrderTimeline {
+  id        String     @id @default(cuid())
+  orderId   String
+  event     OrderEvent
+  metadata  Json?
+  createdAt DateTime   @default(now())
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@index([createdAt])
+}
+
+model OrderNote {
+  id        String   @id @default(cuid())
+  orderId   String
+  content   String
+  authorId  String?
+  createdAt DateTime @default(now())
+
+  order  Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  author User? @relation(fields: [authorId], references: [id])
+
+  @@index([orderId])
+}
+
+model ShippingGuide {
+  id          String   @id @default(cuid())
+  orderId     String
+  provider    String
+  guideNumber String
+  trackingUrl String?
+  labelUrl    String?
+  barcodeUrl  String?
+  cost        Int?
+  status      String   @default("active")
+  createdAt   DateTime @default(now())
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@index([guideNumber])
+  @@index([provider])
+}
+
+model TrackingToken {
+  id        String   @id @default(cuid())
+  orderId   String   @unique
+  token     String   @unique
+  expiresAt DateTime?
+  createdAt DateTime @default(now())
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+}
+
+model NotificationLog {
+  id        String             @id @default(cuid())
+  orderId   String
+  channel   NotificationChannel
+  event     OrderEvent
+  status    String
+  recipient String
+  metadata  Json?
+  createdAt DateTime           @default(now())
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
   @@index([createdAt])
 }

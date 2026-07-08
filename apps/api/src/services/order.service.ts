@@ -1,5 +1,7 @@
 import { prisma } from '../lib/prisma';
 import type { OrderStatus } from '@prisma/client';
+import { orderTimelineService } from './order-timeline.service';
+import { trackingService } from './tracking.service';
 
 export const orderService = {
   async findByUser(userId: string) {
@@ -117,11 +119,32 @@ export const orderService = {
 
     await prisma.cartItem.deleteMany({ where: { userId } });
 
+    await orderTimelineService.record({
+      orderId: order.id,
+      event: 'order_created',
+      metadata: { total, itemsCount: cart.length },
+    });
+
+    try {
+      await trackingService.generateToken(order.id);
+    } catch {
+      // non-critical
+    }
+
     return order;
   },
 
-  async updateStatus(id: string, status: OrderStatus) {
-    return prisma.order.update({
+  async updateStatus(id: string, status: OrderStatus, metadata?: Record<string, unknown>) {
+    const eventMap: Record<string, 'preparing' | 'delivered' | 'cancelled' | 'in_transit' | undefined> = {
+      processing: 'preparing',
+      delivered: 'delivered',
+      cancelled: 'cancelled',
+      shipped: 'in_transit',
+    };
+
+    const event = eventMap[status];
+
+    const order = await prisma.order.update({
       where: { id },
       data: { status },
       include: {
@@ -133,6 +156,16 @@ export const orderService = {
         payments: true,
       },
     });
+
+    if (event) {
+      await orderTimelineService.record({
+        orderId: id,
+        event,
+        metadata: { ...metadata, previousStatus: status },
+      });
+    }
+
+    return order;
   },
 
   async ship(id: string, data: {
@@ -141,7 +174,7 @@ export const orderService = {
     estimatedDelivery?: Date;
     shippingAddress?: string;
   }) {
-    return prisma.order.update({
+    const order = await prisma.order.update({
       where: { id },
       data: {
         status: 'shipped',
@@ -161,5 +194,25 @@ export const orderService = {
         user: { select: { id: true, email: true } },
       },
     });
+
+    await orderTimelineService.record({
+      orderId: id,
+      event: 'guide_generated',
+      metadata: { carrier: data.carrier, trackingNumber: data.trackingNumber },
+    });
+
+    await orderTimelineService.record({
+      orderId: id,
+      event: 'handed_to_carrier',
+      metadata: { carrier: data.carrier, trackingNumber: data.trackingNumber },
+    });
+
+    await orderTimelineService.record({
+      orderId: id,
+      event: 'in_transit',
+      metadata: { carrier: data.carrier, estimatedDelivery: data.estimatedDelivery?.toISOString() },
+    });
+
+    return order;
   },
 };

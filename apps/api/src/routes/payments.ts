@@ -5,6 +5,8 @@ import { preHandler } from '../middleware/auth';
 import { getEnv } from '../env';
 import { wompi } from '../lib/wompi';
 import { sendOrderConfirmation, sendOrderFailed } from '../lib/email';
+import { orderTimelineService } from '../services/order-timeline.service';
+import { notificationService } from '../services/notification.service';
 import z from 'zod';
 
 async function getCart(userId: string) {
@@ -90,6 +92,13 @@ async function confirmOrder(userId: string, provider: 'stripe' | 'wompi') {
   }
 
   await prisma.cartItem.deleteMany({ where: { userId } });
+
+  await orderTimelineService.record({
+    orderId: order.id,
+    event: 'payment_confirmed',
+    metadata: { provider, total },
+  });
+
   return order;
 }
 
@@ -220,6 +229,12 @@ export async function paymentRoutes(app: FastifyInstance) {
                 },
               });
             }
+
+            await orderTimelineService.record({
+              orderId: payment.orderId,
+              event: 'payment_confirmed',
+              metadata: { provider: 'wompi', transactionId },
+            });
           }
 
           await prisma.cartItem.deleteMany({ where: { userId: user.id } });
@@ -540,11 +555,24 @@ export async function paymentRoutes(app: FastifyInstance) {
 
         await prisma.cartItem.deleteMany({ where: { userId: order.userId } });
 
+        await orderTimelineService.record({
+          orderId: order.id,
+          event: 'payment_confirmed',
+          metadata: { provider: 'wompi', transactionId: tx.id },
+        });
+
         await sendOrderConfirmation(order.user.email, {
           id: order.id,
           reference: order.reference,
           total: order.total,
           items: order.items,
+        });
+
+        await notificationService.notifyOrderEvent({
+          orderId: order.id,
+          event: 'payment_confirmed',
+          recipientEmail: order.user.email,
+          recipientPhone: order.phoneNumber || undefined,
         });
       } else if (['DECLINED', 'ERROR', 'VOIDED'].includes(tx.status)) {
         await prisma.payment.update({
@@ -557,9 +585,22 @@ export async function paymentRoutes(app: FastifyInstance) {
           data: { status: 'cancelled' },
         });
 
+        await orderTimelineService.record({
+          orderId: order.id,
+          event: 'cancelled',
+          metadata: { reason: `payment_${tx.status.toLowerCase()}`, transactionStatus: tx.status },
+        });
+
         await sendOrderFailed(order.user.email, {
           id: order.id,
           reference: order.reference,
+        });
+
+        await notificationService.notifyOrderEvent({
+          orderId: order.id,
+          event: 'cancelled',
+          recipientEmail: order.user.email,
+          recipientPhone: order.phoneNumber || undefined,
         });
       }
 
