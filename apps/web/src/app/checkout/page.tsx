@@ -262,11 +262,7 @@ function CheckoutContent() {
   };
 
   const resetCheckout = useCallback(async () => {
-    try {
-      await api.post('/payments/wompi/cancel-pending');
-    } catch {
-      // best effort — proceed with reset even if cancel fails
-    }
+    api.post('/payments/wompi/cancel-pending').catch(() => {});
     sessionStorage.removeItem('wompi_tx');
     setError('');
     setPseForm({ documentType: 'CC', documentNumber: '', fullName: '', phoneNumber: '' });
@@ -295,7 +291,8 @@ function CheckoutContent() {
     const currentMethod = payment.method;
     await resetCheckout();
     if (currentMethod) {
-      handleSelectMethod(currentMethod);
+      setPayment((prev) => ({ ...prev, method: currentMethod, step: 'form' }));
+      if (currentMethod === 'PSE') fetchInstitutions();
     }
   };
 
