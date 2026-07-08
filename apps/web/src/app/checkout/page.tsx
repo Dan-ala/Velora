@@ -290,7 +290,9 @@ function CheckoutContent() {
   const handleRetry = async () => {
     const currentMethod = payment.method;
     await resetCheckout();
-    if (currentMethod) {
+    if (currentMethod === 'CARD') {
+      handleCardPayment();
+    } else if (currentMethod) {
       setPayment((prev) => ({ ...prev, method: currentMethod, step: 'form' }));
       if (currentMethod === 'PSE') fetchInstitutions();
     }
