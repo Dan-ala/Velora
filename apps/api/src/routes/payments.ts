@@ -448,6 +448,23 @@ export async function paymentRoutes(app: FastifyInstance) {
         redirectUrl,
       });
 
+      let asyncPaymentUrl: string | null =
+        transaction.payment_method?.extra?.async_payment_url ||
+        transaction.payment_method?.extra?.pseURL ||
+        null;
+
+      if (!asyncPaymentUrl && body.paymentMethodType === 'PSE') {
+        for (let i = 0; i < 10; i++) {
+          await new Promise((r) => setTimeout(r, 1000));
+          const updated = await wompi.getTransaction(transaction.id);
+          asyncPaymentUrl =
+            updated.payment_method?.extra?.async_payment_url ||
+            updated.payment_method?.extra?.pseURL ||
+            null;
+          if (asyncPaymentUrl) break;
+        }
+      }
+
       await prisma.order.create({
         data: {
           userId: user.id,
@@ -476,7 +493,7 @@ export async function paymentRoutes(app: FastifyInstance) {
         data: {
           transactionId: transaction.id,
           reference,
-          asyncPaymentUrl: transaction.async_payment_url,
+          asyncPaymentUrl,
           status: transaction.status,
         },
       });
