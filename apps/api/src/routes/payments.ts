@@ -45,7 +45,11 @@ async function cancelPendingOrders(userId: string) {
 }
 
 async function confirmOrder(userId: string, provider: 'stripe' | 'wompi') {
-  const cart = await getCart(userId);
+  const [user, cart] = await Promise.all([
+    prisma.user.findUnique({ where: { id: userId }, select: { email: true } }),
+    getCart(userId),
+  ]);
+  if (!user) throw new Error('User not found');
   if (cart.length === 0) throw new Error('Cart is empty');
 
   const total = calcTotal(cart);
@@ -98,6 +102,19 @@ async function confirmOrder(userId: string, provider: 'stripe' | 'wompi') {
     event: 'payment_confirmed',
     metadata: { provider, total },
   });
+
+  sendOrderConfirmation(user.email, {
+    id: order.id,
+    reference: order.reference,
+    total: order.total,
+    items: order.items,
+  }).catch(() => {});
+
+  notificationService.notifyOrderEvent({
+    orderId: order.id,
+    event: 'payment_confirmed',
+    recipientEmail: user.email,
+  }).catch(() => {});
 
   return order;
 }
@@ -235,6 +252,20 @@ export async function paymentRoutes(app: FastifyInstance) {
               event: 'payment_confirmed',
               metadata: { provider: 'wompi', transactionId },
             });
+
+            sendOrderConfirmation(user.email, {
+              id: order.id,
+              reference: order.reference,
+              total: order.total,
+              items: order.items,
+            }).catch(() => {});
+
+            notificationService.notifyOrderEvent({
+              orderId: order.id,
+              event: 'payment_confirmed',
+              recipientEmail: user.email,
+              recipientPhone: order.phoneNumber || undefined,
+            }).catch(() => {});
           }
 
           await prisma.cartItem.deleteMany({ where: { userId: user.id } });
