@@ -11,14 +11,17 @@ import { useFeaturedProducts } from '@/hooks/use-products';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import Image from 'next/image';
+import Head from 'next/head';
+import { getOptimizedImageUrl, getBlurUrl } from '@/lib/cloudinary';
 
+const CLOUD_BASE = 'https://res.cloudinary.com/dvjfilxjp/image/upload';
 const CATEGORIES: { slug: string; image: string }[] = [
-  { slug: 'camisetas', image: 'https://res.cloudinary.com/dvjfilxjp/image/upload/q_auto,f_auto/v1/velora/category-shirts' },
-  { slug: 'buzos', image: 'https://res.cloudinary.com/dvjfilxjp/image/upload/q_auto,f_auto/v1/velora/category-hoodies' },
-  { slug: 'zapatos', image: 'https://res.cloudinary.com/dvjfilxjp/image/upload/q_auto,f_auto/v1/velora/category-shoes' },
-  { slug: 'pantalones', image: 'https://res.cloudinary.com/dvjfilxjp/image/upload/q_auto,f_auto/v1/velora/category-shirts' },
-  { slug: 'abrigos', image: 'https://res.cloudinary.com/dvjfilxjp/image/upload/q_auto,f_auto/v1/velora/category-hoodies' },
-  { slug: 'accesorios', image: 'https://res.cloudinary.com/dvjfilxjp/image/upload/q_auto,f_auto/v1/velora/category-accessories' },
+  { slug: 'camisetas', image: `${CLOUD_BASE}/v1/velora/category-shirts` },
+  { slug: 'buzos', image: `${CLOUD_BASE}/v1/velora/category-hoodies` },
+  { slug: 'zapatos', image: `${CLOUD_BASE}/v1/velora/category-shoes` },
+  { slug: 'pantalones', image: `${CLOUD_BASE}/v1/velora/category-shirts` },
+  { slug: 'abrigos', image: `${CLOUD_BASE}/v1/velora/category-hoodies` },
+  { slug: 'accesorios', image: `${CLOUD_BASE}/v1/velora/category-accessories` },
 ];
 
 export default function HomePage() {
@@ -36,6 +39,10 @@ export default function HomePage() {
 
   return (
     <>
+      <Head>
+        <link rel="preload" as="image" href={getOptimizedImageUrl(CATEGORIES[0].image, 640)} />
+        <link rel="preload" as="image" href={getOptimizedImageUrl(CATEGORIES[1].image, 640)} />
+      </Head>
       <Header />
       <CartSidebar />
 
@@ -183,10 +190,12 @@ export default function HomePage() {
                   className="group relative aspect-[3/4] overflow-hidden rounded-xl"
                 >
                   <Image
-                    src={cat.image}
+                    src={getOptimizedImageUrl(cat.image, 640)}
                     alt={categoryLabels[cat.slug]}
                     fill
                     priority={cat.slug === 'camisetas' || cat.slug === 'buzos'}
+                    placeholder="blur"
+                    blurDataURL={getBlurUrl(cat.image)}
                     className="object-cover transition-transform duration-700 group-hover:scale-105"
                     sizes="(max-width: 768px) 50vw, 25vw"
                   />

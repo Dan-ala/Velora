@@ -1,16 +1,22 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || '/api';
-const INTERVAL = 10 * 60 * 1000;
+const INTERVAL = 5 * 60 * 1000;
 
 export function KeepAlive() {
+  const pingingRef = useRef(false);
+
   useEffect(() => {
     const ping = () => {
-      fetch(`${API_URL}/products?limit=1`, { signal: AbortSignal.timeout(10000) }).catch(() => {});
+      if (pingingRef.current) return;
+      pingingRef.current = true;
+      fetch(`${API_URL}/products?limit=1`, { signal: AbortSignal.timeout(20000) })
+        .catch(() => {})
+        .finally(() => { pingingRef.current = false; });
     };
-    ping();
+
     const id = setInterval(ping, INTERVAL);
     return () => clearInterval(id);
   }, []);

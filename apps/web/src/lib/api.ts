@@ -1,27 +1,17 @@
-import { createClient } from './supabase';
 import { useAuthStore } from '@/stores/auth-store';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || '/api';
 
-async function getAuthHeaders(): Promise<Record<string, string>> {
-  const supabase = createClient();
-  const { data } = await supabase.auth.getSession();
-  const token = data.session?.access_token || useAuthStore.getState().accessToken;
-
-  const headers: Record<string, string> = {};
-
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
-  }
-
-  return headers;
+function getAuthHeaders(): Record<string, string> {
+  const token = useAuthStore.getState().accessToken;
+  return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
 async function request<T>(
   endpoint: string,
   options: RequestInit = {},
 ): Promise<T> {
-  const headers = await getAuthHeaders();
+  const headers = getAuthHeaders();
 
   const response = await fetch(`${API_URL}${endpoint}`, {
     ...options,
@@ -30,6 +20,7 @@ async function request<T>(
       ...headers,
       ...options.headers,
     },
+    signal: options.signal ?? AbortSignal.timeout(15000),
   });
 
   const data = await response.json();

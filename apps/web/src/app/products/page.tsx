@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useMemo } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Header } from '@/components/layout/header';
 import { Footer } from '@/components/layout/footer';
 import { BottomNav } from '@/components/layout/bottom-nav';
@@ -12,15 +13,12 @@ import { useProducts } from '@/hooks/use-products';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 
-export default function ProductsPage() {
+function ProductsContent() {
   const { locale, t } = useLocale();
-  const [activeCategory, setActiveCategory] = useState('');
+  const searchParams = useSearchParams();
+  const activeCategory = searchParams.get('category') || '';
   const { data: products, isLoading } = useProducts(activeCategory || undefined);
-
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    setActiveCategory(params.get('category') || '');
-  }, []);
+  const firstBatch = useMemo(() => products?.slice(0, 4) ?? [], [products]);
 
   return (
     <>
@@ -41,22 +39,20 @@ export default function ProductsPage() {
 
         <div className="mx-auto max-w-7xl px-4 py-8 tablet:px-6 wide:px-8">
           <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-hide">
-            <Link
-              href="/products"
-              onClick={() => setActiveCategory('')}
-              className={`flex-shrink-0 rounded-full px-4 py-2 text-xs font-medium uppercase tracking-wider transition-all ${
-                !activeCategory
-                  ? 'bg-brand-black text-white'
-                  : 'bg-brand-ivory text-brand-stone hover:bg-brand-black/10'
-              }`}
-            >
+              <Link
+                href="/products"
+                className={`flex-shrink-0 rounded-full px-4 py-2 text-xs font-medium uppercase tracking-wider transition-all ${
+                  !activeCategory
+                    ? 'bg-brand-black text-white'
+                    : 'bg-brand-ivory text-brand-stone hover:bg-brand-black/10'
+                }`}
+              >
               {t('products.all')}
             </Link>
             {CATEGORIES.map((cat) => (
               <Link
                 key={cat}
                 href={`/products?category=${cat}`}
-                onClick={() => setActiveCategory(cat)}
                 className={`flex-shrink-0 rounded-full px-4 py-2 text-xs font-medium uppercase tracking-wider transition-all ${
                   activeCategory === cat
                     ? 'bg-brand-black text-white'
@@ -87,7 +83,10 @@ export default function ProductsPage() {
               </div>
             ) : (
               <div className="grid grid-cols-2 gap-4 tablet:grid-cols-3 desktop:grid-cols-4">
-                {products.map((product) => (
+                {firstBatch.map((product) => (
+                  <ProductCard key={product.id} product={product} priority />
+                ))}
+                {products.slice(4).map((product) => (
                   <ProductCard key={product.id} product={product} />
                 ))}
               </div>
@@ -98,5 +97,13 @@ export default function ProductsPage() {
       <Footer />
       <BottomNav />
     </>
+  );
+}
+
+export default function ProductsPage() {
+  return (
+    <Suspense fallback={null}>
+      <ProductsContent />
+    </Suspense>
   );
 }
