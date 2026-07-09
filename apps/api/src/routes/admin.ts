@@ -4,7 +4,6 @@ import { orderService } from '../services/order.service';
 import { orderTimelineService } from '../services/order-timeline.service';
 import { preHandler } from '../middleware/auth';
 import { prisma } from '../lib/prisma';
-import { sendOrderShipped } from '../lib/email';
 import { shippingService } from '../services/shipping.service';
 import { notificationService } from '../services/notification.service';
 import z from 'zod';
@@ -216,16 +215,7 @@ export async function adminRoutes(app: FastifyInstance) {
       shippingAddress: body.shippingAddress,
     });
 
-    await sendOrderShipped(order.user.email, {
-      id: order.id,
-      reference: order.reference,
-      trackingNumber: order.trackingNumber,
-      carrier: order.carrier,
-      estimatedDelivery: order.estimatedDelivery,
-      items: order.items,
-      total: order.total,
-    });
-
+    // notifyOrderEvent handles both email and WhatsApp internally
     await notificationService.notifyOrderEvent({
       orderId: id,
       event: 'handed_to_carrier',
@@ -318,7 +308,33 @@ export async function adminRoutes(app: FastifyInstance) {
       },
     });
 
-    return reply.status(201).send({ success: true, data: guide });
+    // Auto-ship: update status to shipped + notify user
+    const updated = await prisma.order.update({
+      where: { id },
+      data: { status: 'shipped', shippingStatus: 'shipped' },
+      include: { user: { select: { id: true, email: true } } },
+    });
+
+    await orderTimelineService.record({
+      orderId: id,
+      event: 'handed_to_carrier',
+      metadata: { provider: body.provider, guideNumber: guide.guideNumber },
+    });
+
+    await orderTimelineService.record({
+      orderId: id,
+      event: 'in_transit',
+      metadata: { provider: body.provider, guideNumber: guide.guideNumber },
+    });
+
+    await notificationService.notifyOrderEvent({
+      orderId: id,
+      event: 'handed_to_carrier',
+      recipientEmail: updated.user.email,
+      recipientPhone: order.phoneNumber || undefined,
+    });
+
+    return reply.status(201).send({ success: true, data: { ...guide, autoShipped: true } });
   });
 
   app.get('/orders/:id/guides', async (request, reply) => {

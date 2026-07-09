@@ -2,6 +2,7 @@ import { prisma } from '../lib/prisma';
 import type { OrderStatus } from '@prisma/client';
 import { orderTimelineService } from './order-timeline.service';
 import { trackingService } from './tracking.service';
+import { notificationService } from './notification.service';
 
 export const orderService = {
   async findByUser(userId: string) {
@@ -30,6 +31,7 @@ export const orderService = {
         },
         payments: true,
         user: { select: { id: true, email: true } },
+        trackingToken: true,
       },
     });
   },
@@ -154,6 +156,7 @@ export const orderService = {
           },
         },
         payments: true,
+        user: { select: { id: true, email: true } },
       },
     });
 
@@ -163,6 +166,16 @@ export const orderService = {
         event,
         metadata: { ...metadata, previousStatus: status },
       });
+    }
+
+    if (status === 'shipped' || status === 'delivered' || status === 'cancelled') {
+      const notificationEvent = status === 'shipped' ? 'in_transit' : status === 'delivered' ? 'delivered' : 'cancelled';
+      notificationService.notifyOrderEvent({
+        orderId: id,
+        event: notificationEvent as any,
+        recipientEmail: order.user.email,
+        recipientPhone: order.phoneNumber || undefined,
+      }).catch(() => {});
     }
 
     return order;

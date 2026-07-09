@@ -8,7 +8,7 @@ import { formatCurrency, formatDate } from '@/lib/utils';
 import { toast } from '@/hooks/use-toast';
 import {
   ArrowLeft, Package, Truck, MapPin, Clock, CreditCard,
-  FileText, Plus, Loader2, Check, ExternalLink, BarChart3,
+  FileText, Plus, Loader2, Check, ExternalLink, BarChart3, X,
 } from 'lucide-react';
 import type { Order, OrderTimeline, OrderNote, ShippingGuide } from '@velora/types';
 
@@ -43,6 +43,14 @@ export default function AdminOrderDetailPage() {
   const [noteContent, setNoteContent] = useState('');
   const [addingNote, setAddingNote] = useState(false);
   const [generatingGuide, setGeneratingGuide] = useState(false);
+  const [showShipModal, setShowShipModal] = useState(false);
+  const [shipForm, setShipForm] = useState({
+    trackingNumber: '',
+    carrier: '',
+    estimatedDelivery: '',
+    shippingAddress: '',
+  });
+  const [sendingShip, setSendingShip] = useState(false);
 
   useEffect(() => {
     if (!user || user.role !== 'admin') {
@@ -98,6 +106,29 @@ export default function AdminOrderDetailPage() {
       toast({ title: 'Error', description: err.message, variant: 'destructive' });
     } finally {
       setAddingNote(false);
+    }
+  };
+
+  const handleManualShip = async () => {
+    if (!shipForm.trackingNumber.trim() || !shipForm.carrier.trim()) return;
+    setSendingShip(true);
+    try {
+      const res = await api.patch<{ success: boolean; data: OrderDetail }>(
+        `/admin/orders/${params.id}/ship`,
+        {
+          trackingNumber: shipForm.trackingNumber,
+          carrier: shipForm.carrier,
+          estimatedDelivery: shipForm.estimatedDelivery || undefined,
+          shippingAddress: shipForm.shippingAddress || undefined,
+        },
+      );
+      toast({ title: 'Pedido marcado como enviado', variant: 'success' });
+      setShowShipModal(false);
+      if (res.data) setOrder(res.data);
+    } catch (err: any) {
+      toast({ title: 'Error', description: err.message, variant: 'destructive' });
+    } finally {
+      setSendingShip(false);
     }
   };
 
@@ -339,6 +370,15 @@ export default function AdminOrderDetailPage() {
                     Marcar en preparación
                   </button>
                 )}
+                {(order.status === 'confirmed' || order.status === 'processing') && !order.trackingNumber && (
+                  <button
+                    onClick={() => setShowShipModal(true)}
+                    className="flex h-11 w-full items-center justify-center gap-2 rounded-full border border-brand-ivory text-xs font-medium uppercase tracking-wider transition-colors hover:bg-brand-ivory"
+                  >
+                    <Truck size={14} />
+                    Marcar como enviado
+                  </button>
+                )}
               </div>
             </div>
 
@@ -402,6 +442,74 @@ export default function AdminOrderDetailPage() {
           </div>
         </div>
       </div>
+
+      {showShipModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+          <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-semibold uppercase tracking-wider">Marcar como enviado</h3>
+              <button onClick={() => setShowShipModal(false)} className="text-brand-stone hover:text-brand-black">
+                <X size={18} />
+              </button>
+            </div>
+            <div className="mt-4 space-y-4">
+              <div>
+                <label className="text-xs font-medium text-brand-stone">Transportadora</label>
+                <input
+                  value={shipForm.carrier}
+                  onChange={(e) => setShipForm({ ...shipForm, carrier: e.target.value })}
+                  placeholder="Ej: Inter Rapidísimo, Mensajero propio..."
+                  className="mt-1 w-full rounded-xl border border-brand-ivory px-4 py-2 text-sm outline-none focus:border-brand-gold"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-brand-stone">Número de guía</label>
+                <input
+                  value={shipForm.trackingNumber}
+                  onChange={(e) => setShipForm({ ...shipForm, trackingNumber: e.target.value })}
+                  placeholder="Ingresa el número de guía"
+                  className="mt-1 w-full rounded-xl border border-brand-ivory px-4 py-2 text-sm outline-none focus:border-brand-gold"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-brand-stone">Fecha estimada de entrega</label>
+                <input
+                  type="date"
+                  value={shipForm.estimatedDelivery}
+                  onChange={(e) => setShipForm({ ...shipForm, estimatedDelivery: e.target.value })}
+                  className="mt-1 w-full rounded-xl border border-brand-ivory px-4 py-2 text-sm outline-none focus:border-brand-gold"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-brand-stone">Dirección de envío</label>
+                <textarea
+                  value={shipForm.shippingAddress}
+                  onChange={(e) => setShipForm({ ...shipForm, shippingAddress: e.target.value })}
+                  placeholder="Dirección completa"
+                  rows={2}
+                  className="mt-1 w-full rounded-xl border border-brand-ivory px-4 py-2 text-sm outline-none focus:border-brand-gold"
+                />
+              </div>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowShipModal(false)}
+                  className="flex h-11 flex-1 items-center justify-center rounded-full border border-brand-ivory text-xs font-medium uppercase tracking-wider"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleManualShip}
+                  disabled={sendingShip || !shipForm.trackingNumber.trim() || !shipForm.carrier.trim()}
+                  className="flex h-11 flex-1 items-center justify-center gap-2 rounded-full bg-brand-black text-xs font-medium uppercase tracking-wider text-white disabled:opacity-50"
+                >
+                  {sendingShip ? <Loader2 size={14} className="animate-spin" /> : <Truck size={14} />}
+                  {sendingShip ? 'Enviando...' : 'Enviar'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

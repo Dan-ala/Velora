@@ -8,7 +8,7 @@ import { BottomNav } from '@/components/layout/bottom-nav';
 import { CartSidebar } from '@/components/layout/cart-sidebar';
 import { api } from '@/lib/api';
 import { formatCurrency, formatDate } from '@/lib/utils';
-import { Check, Package, Truck, MapPin, Clock, Loader2 } from 'lucide-react';
+import { Check, Package, Truck, MapPin, Clock, Loader2, ExternalLink } from 'lucide-react';
 import Link from 'next/link';
 import type { Order } from '@velora/types';
 
@@ -214,6 +214,17 @@ export default function OrderTrackingPage() {
                           <p className="text-sm font-medium">{order.shippingAddress}</p>
                         </div>
                       </div>
+                    )}
+                    {(order as any).trackingToken?.token && (
+                      <a
+                        href={`/tracking/${(order as any).trackingToken.token}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mt-2 flex items-center gap-2 text-xs font-medium text-brand-gold transition-colors hover:underline"
+                      >
+                        <ExternalLink size={12} />
+                        Ver seguimiento detallado
+                      </a>
                     )}
                   </div>
                 </div>

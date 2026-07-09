@@ -57,6 +57,10 @@ export const notificationService = {
 
       if (!order || !params.recipientEmail) return;
 
+      const trackingUrl = order.trackingToken
+        ? `${((await import('../env')).getEnv()).FRONTEND_URL.split(',')[0]}/tracking/${order.trackingToken.token}`
+        : null;
+
       switch (params.event) {
         case 'payment_confirmed': {
           await sendOrderConfirmation(params.recipientEmail, {
@@ -64,6 +68,7 @@ export const notificationService = {
             reference: order.reference,
             total: order.total,
             items: order.items,
+            trackingUrl,
           });
           await logNotification({
             orderId: params.orderId,
@@ -84,6 +89,24 @@ export const notificationService = {
             estimatedDelivery: order.estimatedDelivery,
             items: order.items,
             total: order.total,
+          });
+          await logNotification({
+            orderId: params.orderId,
+            channel: 'email',
+            event: params.event,
+            status: 'sent',
+            recipient: params.recipientEmail,
+          });
+          break;
+        }
+        case 'delivered': {
+          const { sendOrderDelivered } = await import('../lib/email');
+          await sendOrderDelivered(params.recipientEmail, {
+            id: order.id,
+            reference: order.reference,
+            items: order.items,
+            total: order.total,
+            trackingUrl,
           });
           await logNotification({
             orderId: params.orderId,
