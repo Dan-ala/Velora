@@ -2,6 +2,7 @@ import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
 import rateLimit from '@fastify/rate-limit';
+import { ZodError } from 'zod';
 import { getEnv } from './env';
 import { productRoutes } from './routes/products';
 import { authRoutes } from './routes/auth';
@@ -19,6 +20,27 @@ async function bootstrap() {
 
   const app = Fastify({
     logger: true,
+  });
+
+  // Without this, any thrown ZodError (from the schema.parse() calls used
+  // throughout the routes) falls through to Fastify's default handler,
+  // which returns a bare 500 instead of a proper 400 with the actual
+  // validation message. This affects every route, not just auth.
+  app.setErrorHandler((err, request, reply) => {
+    if (err instanceof ZodError) {
+      const message = err.errors[0]?.message || 'Invalid request';
+      return reply.status(400).send({ success: false, error: message });
+    }
+
+    if (err instanceof Error) {
+      const statusCode = (err as { statusCode?: number }).statusCode;
+      if (statusCode && statusCode < 500) {
+        return reply.status(statusCode).send({ success: false, error: err.message });
+      }
+    }
+
+    app.log.error(err);
+    return reply.status(500).send({ success: false, error: 'Something went wrong. Please try again.' });
   });
 
   await app.register(helmet, { contentSecurityPolicy: false });

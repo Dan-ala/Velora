@@ -1,0 +1,58 @@
+
+> @velora/web@0.1.0 build /home/daniel-alarcon/projects/store/velora/apps/web
+> next build
+
+   ▲ Next.js 15.5.19
+   - Environments: .env.local, .env
+
+   Creating an optimized production build ...
+ ✓ Compiled successfully in 14.6s
+   Linting and checking validity of types ...
+   Collecting page data ...
+   Generating static pages (0/25) ...
+   Generating static pages (6/25) 
+   Generating static pages (12/25) 
+   Generating static pages (18/25) 
+ ✓ Generating static pages (25/25)
+   Finalizing page optimization ...
+   Collecting build traces ...
+
+Route (app)                                 Size  First Load JS
+┌ ○ /                                    4.19 kB         182 kB
+├ ○ /_not-found                            991 B         103 kB
+├ ○ /about                                 593 B         170 kB
+├ ○ /account                             2.89 kB         236 kB
+├ ○ /admin                               6.56 kB         161 kB
+├ ○ /admin/orders                        4.31 kB         115 kB
+├ ƒ /admin/orders/[id]                   5.59 kB         116 kB
+├ ○ /auth/login                          2.73 kB         217 kB
+├ ○ /auth/register                       2.35 kB         153 kB
+├ ○ /auth/reset-password                 1.46 kB         214 kB
+├ ○ /auth/update-password                2.76 kB         215 kB
+├ ○ /careers                               591 B         170 kB
+├ ○ /cart                                1.74 kB         171 kB
+├ ○ /checkout                            6.25 kB         176 kB
+├ ○ /contact                             1.02 kB         170 kB
+├ ○ /faq                                   692 B         170 kB
+├ ƒ /orders/[id]                         3.34 kB         173 kB
+├ ○ /orders/confirmation                 2.27 kB         172 kB
+├ ○ /privacy                               616 B         170 kB
+├ ○ /products                            3.21 kB         181 kB
+├ ƒ /products/[id]                       3.69 kB         182 kB
+├ ○ /returns                               611 B         170 kB
+├ ○ /search                              2.82 kB         172 kB
+├ ○ /shipping                              624 B         170 kB
+├ ○ /size-guide                            882 B         170 kB
+├ ○ /terms                                 617 B         170 kB
+└ ƒ /tracking/[token]                    3.71 kB         173 kB
++ First Load JS shared by all             102 kB
+  ├ chunks/4557610a-fefa5be19e77ed4a.js  54.2 kB
+  ├ chunks/785-778584e14f2dca51.js       45.8 kB
+  └ other shared chunks (total)          1.93 kB
+
+
+ƒ Middleware                             34.4 kB
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
